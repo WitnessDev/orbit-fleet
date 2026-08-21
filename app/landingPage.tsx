@@ -1,13 +1,11 @@
 "use client";
 
 import {
-  ArrowRight,
   ChevronDown,
   Compass,
   Grid,
   LogOut,
   Route,
-  ShieldCheck,
   Wrench,
 } from "lucide-react";
 import Image from "next/image";

@@ -1,17 +1,17 @@
 "use client";
 
 import {
-  Bell,
-  ChevronDown,
-  CircleHelp,
+  Navigation,
+  X,
   Gauge,
   MapPin,
-  Menu,
-  Navigation,
-  Settings,
   Truck,
   Users,
-  X,
+  Bell,
+  Settings,
+  CircleHelp,
+  ChevronDown,
+  Menu,
 } from "lucide-react";
 import { useState } from "react";
 import Button from "@/components/ui/Button";
@@ -188,7 +188,7 @@ export default function Home() {
               </h2>
 
               <p className="mt-2 text-sm text-text-secondary">
-                Here's what's happening across your fleet right now.
+                Here&apos;s what&apos;s happening across your fleet right now.
               </p>
             </div>
 
