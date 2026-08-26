@@ -1,407 +1,666 @@
 "use client";
 
-import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
-  Navigation,
-  ArrowRight,
-  MapPin,
-  Truck,
-  ShieldCheck,
   Activity,
+  Bell,
+  Car,
+  ChevronRight,
+  CircleUserRound,
+  LayoutDashboard,
+  LogOut,
+  Map,
+  Menu,
+  Settings,
+  ShieldCheck,
+  Truck,
+  UserRound,
+  Users,
+  X,
 } from "lucide-react";
 
-export default function LandingPage() {
+import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
+import Card from "@/components/ui/Card";
+import StatCard from "@/components/ui/StatCard";
+
+export default function DashboardPage() {
+  const router = useRouter();
+
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  /*
+   * IMPORTANT:
+   * No vehicles are created here.
+   * No fake numbers are inserted.
+   *
+   * These values should later come from Firestore.
+   */
+  const dashboardStats = {
+    vehicles: 0,
+    online: 0,
+    idle: 0,
+    offline: 0,
+  };
+
+  const handleLogout = () => {
+    // Firebase logout will be connected here.
+    router.push("/login");
+  };
+
+  const navigation = [
+    {
+      label: "Dashboard",
+      icon: LayoutDashboard,
+      active: true,
+      href: "/dashbord",
+    },
+    {
+      label: "Vehicles",
+      icon: Truck,
+      active: false,
+      href: "/dashbord/vehicles",
+    },
+    {
+      label: "Drivers",
+      icon: Users,
+      active: false,
+      href: "/dashbord/drivers",
+    },
+    {
+      label: "Devices",
+      icon: Activity,
+      active: false,
+      href: "/dashbord/devices",
+    },
+    {
+      label: "Live Tracking",
+      icon: Map,
+      active: false,
+      href: "/dashbord/tracking",
+    },
+  ];
+
   return (
-    <main className="min-h-screen bg-background text-text-primary">
-      {/* Navigation */}
-      <header className="border-b border-border bg-background">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-5 md:px-8">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white">
-              <Navigation size={20} strokeWidth={2.5} />
+    <div className="min-h-screen bg-background text-text-primary">
+
+      {/* ======================================================
+          MOBILE SIDEBAR OVERLAY
+      ======================================================= */}
+
+      {sidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
+        />
+      )}
+
+      {/* ======================================================
+          SIDEBAR
+      ======================================================= */}
+
+      <aside
+        className={`
+          fixed inset-y-0 left-0 z-50 flex w-72 flex-col
+          border-r border-border bg-surface
+          transition-transform duration-300
+          lg:translate-x-0
+          ${
+            sidebarOpen
+              ? "translate-x-0"
+              : "-translate-x-full"
+          }
+        `}
+      >
+
+        {/* BRAND */}
+
+        <div className="flex h-20 items-center justify-between border-b border-border px-6">
+
+          <button
+            type="button"
+            onClick={() => router.push("/dashbord")}
+            className="flex items-center gap-3"
+          >
+
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-lg shadow-primary/20">
+              <Truck className="h-5 w-5" />
             </div>
 
-            <div>
-              <h1 className="font-display text-lg font-bold tracking-tight">
-                ORBIT
-              </h1>
+            <div className="text-left">
+              <p className="font-display text-lg font-bold tracking-tight">
+                Orbit Fleet
+              </p>
 
-              <p className="text-[10px] font-bold tracking-[0.25em] text-gradient">
-                FLEET
+              <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-text-muted">
+                Fleet Intelligence
               </p>
             </div>
-          </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden items-center gap-8 md:flex">
-            <a
-              href="#features"
-              className="text-sm font-medium text-text-secondary hover:text-text-primary"
-            >
-              Features
-            </a>
+          </button>
 
-            <a
-              href="#tracking"
-              className="text-sm font-medium text-text-secondary hover:text-text-primary"
-            >
-              Tracking
-            </a>
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(false)}
+            className="rounded-lg p-2 text-text-muted hover:bg-surface-hover lg:hidden"
+          >
+            <X className="h-5 w-5" />
+          </button>
 
-            <a
-              href="#about"
-              className="text-sm font-medium text-text-secondary hover:text-text-primary"
-            >
-              About
-            </a>
+        </div>
+
+        {/* NAVIGATION */}
+
+        <div className="flex-1 overflow-y-auto px-4 py-6">
+
+          <p className="mb-3 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted">
+            Workspace
+          </p>
+
+          <nav className="space-y-1">
+
+            {navigation.map((item) => {
+              const Icon = item.icon;
+
+              return (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => {
+                    setSidebarOpen(false);
+                    router.push(item.href);
+                  }}
+                  className={`
+                    group flex w-full items-center gap-3 rounded-xl
+                    px-3 py-3 text-sm font-semibold transition-all
+                    ${
+                      item.active
+                        ? "bg-primary text-white shadow-lg shadow-primary/15"
+                        : "text-text-secondary hover:bg-surface-hover hover:text-text-primary"
+                    }
+                  `}
+                >
+
+                  <Icon
+                    className={`
+                      h-[18px] w-[18px]
+                      ${
+                        item.active
+                          ? "text-white"
+                          : "text-text-muted group-hover:text-primary"
+                      }
+                    `}
+                  />
+
+                  <span>{item.label}</span>
+
+                  {item.active && (
+                    <ChevronRight className="ml-auto h-4 w-4 opacity-70" />
+                  )}
+
+                </button>
+              );
+            })}
+
           </nav>
 
-          {/* Login */}
-          <Link
-            href="/login"
-            className="rounded-lg bg-primary px-5 py-2.5 text-sm font-bold text-white transition hover:bg-primary-hover"
-          >
-            Login
-          </Link>
+          <p className="mb-3 mt-8 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-text-muted">
+            System
+          </p>
+
+          <nav className="space-y-1">
+
+            <button
+              type="button"
+              className="group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-text-secondary transition hover:bg-surface-hover hover:text-text-primary"
+            >
+              <Settings className="h-[18px] w-[18px] text-text-muted group-hover:text-primary" />
+              Settings
+            </button>
+
+          </nav>
+
         </div>
-      </header>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="mx-auto grid min-h-[calc(100vh-80px)] max-w-7xl items-center gap-12 px-5 py-16 md:px-8 lg:grid-cols-2">
-          {/* Hero Content */}
-          <div>
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-success" />
+        {/* SIDEBAR USER */}
 
-              <span className="text-xs font-bold text-text-secondary">
-                Fleet management platform
-              </span>
+        <div className="border-t border-border p-4">
+
+          <div className="mb-3 flex items-center gap-3 rounded-xl bg-background p-3">
+
+            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+              <CircleUserRound className="h-5 w-5 text-primary" />
             </div>
 
-            <h2 className="font-display text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
-              Manage your fleet.
-              <br />
-              <span className="text-gradient">Move smarter.</span>
-            </h2>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold">
+                Account
+              </p>
 
-            <p className="mt-6 max-w-xl text-base leading-7 text-text-secondary md:text-lg">
-              Orbit Fleet gives you complete visibility over your vehicles,
-              drivers, trips and GPS activity from one powerful platform.
-            </p>
-
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-6 py-3.5 text-sm font-bold text-white transition hover:bg-primary-hover"
-              >
-                Get started
-                <ArrowRight size={17} />
-              </Link>
-
-              <a
-                href="#features"
-                className="inline-flex items-center justify-center rounded-lg border border-border bg-surface px-6 py-3.5 text-sm font-bold text-text-primary transition hover:bg-surface-hover"
-              >
-                Explore features
-              </a>
+              <p className="truncate text-[11px] text-text-muted">
+                Fleet administrator
+              </p>
             </div>
 
-            {/* Small Stats */}
-            <div className="mt-10 grid max-w-lg grid-cols-3 gap-5 border-t border-border pt-7">
-              <div>
-                <p className="font-display text-2xl font-bold">24/7</p>
-                <p className="mt-1 text-xs text-text-muted">
-                  Fleet visibility
-                </p>
-              </div>
-
-              <div>
-                <p className="font-display text-2xl font-bold">GPS</p>
-                <p className="mt-1 text-xs text-text-muted">
-                  Live tracking
-                </p>
-              </div>
-
-              <div>
-                <p className="font-display text-2xl font-bold">100%</p>
-                <p className="mt-1 text-xs text-text-muted">
-                  Fleet control
-                </p>
-              </div>
-            </div>
           </div>
 
-          {/* Dashboard Preview */}
-          <div className="relative">
-            <div className="rounded-2xl border border-border bg-surface p-4 shadow-[var(--shadow-card)]">
-              {/* Preview Header */}
-              <div className="flex items-center justify-between border-b border-border pb-4">
-                <div>
-                  <p className="text-xs text-text-muted">Fleet overview</p>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-semibold text-text-secondary transition hover:bg-danger/10 hover:text-danger"
+          >
+            <LogOut className="h-[18px] w-[18px]" />
+            Logout
+          </button>
 
-                  <p className="mt-1 font-display text-lg font-bold">
-                    Live operations
+        </div>
+
+      </aside>
+
+      {/* ======================================================
+          MAIN AREA
+      ======================================================= */}
+
+      <div className="lg:pl-72">
+
+        {/* ====================================================
+            TOP HEADER
+        ===================================================== */}
+
+        <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur-xl">
+
+          <div className="flex h-20 items-center justify-between px-4 sm:px-6 lg:px-8">
+
+            <div className="flex items-center gap-3">
+
+              <button
+                type="button"
+                onClick={() => setSidebarOpen(true)}
+                className="rounded-xl p-2.5 text-text-secondary hover:bg-surface lg:hidden"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+
+              <div>
+                <p className="text-xs font-medium text-text-muted">
+                  Fleet Operations
+                </p>
+
+                <h1 className="font-display text-lg font-bold">
+                  Dashboard
+                </h1>
+              </div>
+
+            </div>
+
+            <div className="flex items-center gap-2">
+
+              <button
+                type="button"
+                className="relative rounded-xl border border-border bg-surface p-2.5 text-text-secondary transition hover:text-text-primary"
+              >
+                <Bell className="h-[18px] w-[18px]" />
+
+                <span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-primary" />
+              </button>
+
+              <div className="hidden h-9 w-px bg-border sm:block" />
+
+              <div className="hidden items-center gap-2 sm:flex">
+
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
+                  <UserRound className="h-4 w-4 text-primary" />
+                </div>
+
+                <div>
+                  <p className="text-xs font-bold">
+                    Administrator
+                  </p>
+
+                  <p className="text-[10px] text-text-muted">
+                    Fleet Manager
                   </p>
                 </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </header>
+
+        {/* ====================================================
+            CONTENT
+        ===================================================== */}
+
+        <main className="mx-auto max-w-[1600px] p-4 sm:p-6 lg:p-8">
+
+          {/* HERO */}
+
+          <section className="mb-8">
+
+            <div className="relative overflow-hidden rounded-2xl border border-border bg-surface p-6 shadow-[var(--shadow-card)] sm:p-8">
+
+              {/* decorative background */}
+
+              <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+
+              <div className="pointer-events-none absolute -bottom-20 left-1/3 h-48 w-48 rounded-full bg-primary/5 blur-3xl" />
+
+              <div className="relative">
+
+                <div className="mb-4 flex items-center gap-2">
+
+                  <Badge status="online">
+                    System Ready
+                  </Badge>
+
+                </div>
+
+                <h2 className="max-w-2xl font-display text-3xl font-bold tracking-tight sm:text-4xl">
+                  Fleet command center
+                </h2>
+
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-text-secondary">
+                  Monitor your vehicles, drivers, devices and
+                  operations from one centralized workspace.
+                </p>
+
+              </div>
+
+            </div>
+
+          </section>
+
+          {/* ==================================================
+              STATS
+          =================================================== */}
+
+          <section className="mb-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+            <StatCard
+              label="Total Vehicles"
+              value={dashboardStats.vehicles.toString()}
+              detail="Vehicles registered in fleet"
+              status="primary"
+            />
+
+            <StatCard
+              label="Online"
+              value={dashboardStats.online.toString()}
+              detail="Currently connected"
+              status="success"
+            />
+
+            <StatCard
+              label="Idle"
+              value={dashboardStats.idle.toString()}
+              detail="Currently stationary"
+              status="warning"
+            />
+
+            <StatCard
+              label="Offline"
+              value={dashboardStats.offline.toString()}
+              detail="Currently disconnected"
+              status="danger"
+            />
+
+          </section>
+
+          {/* ==================================================
+              MAIN GRID
+          =================================================== */}
+
+          <section className="grid gap-6 xl:grid-cols-[1.5fr_1fr]">
+
+            {/* LIVE MAP */}
+
+            <Card className="overflow-hidden">
+
+              <div className="flex items-center justify-between border-b border-border p-5">
+
+                <div>
+                  <div className="flex items-center gap-2">
+
+                    <Map className="h-4 w-4 text-primary" />
+
+                    <h3 className="font-display text-base font-semibold">
+                      Live Fleet Map
+                    </h3>
+
+                  </div>
+
+                  <p className="mt-1 text-xs text-text-muted">
+                    Real-time vehicle positioning
+                  </p>
+                </div>
+
+                <Button
+                  variant="ghost"
+                  onClick={() =>
+                    router.push("/dashbord/tracking")
+                  }
+                >
+                  Open Map
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+
+              </div>
+
+              <div className="flex min-h-[360px] items-center justify-center bg-background p-6">
+
+                <div className="max-w-sm text-center">
+
+                  <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-border bg-surface shadow-sm">
+
+                    <Map className="h-7 w-7 text-text-muted" />
+
+                  </div>
+
+                  <h4 className="font-display text-base font-semibold">
+                    No vehicle locations available
+                  </h4>
+
+                  <p className="mt-2 text-sm leading-6 text-text-muted">
+                    Add vehicles and connect GPS devices to begin
+                    viewing your fleet on the live map.
+                  </p>
+
+                  <Button
+                    variant="secondary"
+                    className="mt-5"
+                    onClick={() =>
+                      router.push("/dashbord/vehicles")
+                    }
+                  >
+                    Manage Vehicles
+                  </Button>
+
+                </div>
+
+              </div>
+
+            </Card>
+
+            {/* OPERATIONS */}
+
+            <Card className="overflow-hidden">
+
+              <div className="border-b border-border p-5">
 
                 <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 animate-pulse rounded-full bg-success" />
 
-                  <span className="text-xs font-semibold text-success">
-                    Live
-                  </span>
-                </div>
-              </div>
+                  <Activity className="h-4 w-4 text-primary" />
 
-              {/* Fake Map */}
-              <div className="relative mt-4 h-[360px] overflow-hidden rounded-xl bg-slate-900">
-                <div
-                  className="absolute inset-0 opacity-[0.12]"
-                  style={{
-                    backgroundImage:
-                      "linear-gradient(#ffffff 1px, transparent 1px), linear-gradient(90deg, #ffffff 1px, transparent 1px)",
-                    backgroundSize: "45px 45px",
-                  }}
-                />
+                  <h3 className="font-display text-base font-semibold">
+                    Operations
+                  </h3>
 
-                <div className="absolute left-[18%] top-[30%] h-[160%] w-px rotate-[25deg] bg-white/10" />
-
-                <div className="absolute left-[58%] top-[-20%] h-[160%] w-px rotate-[-18deg] bg-white/10" />
-
-                <div className="absolute left-[-10%] top-[55%] h-px w-[130%] rotate-[-8deg] bg-white/10" />
-
-                <MapMarker left="25%" top="40%" />
-
-                <MapMarker left="62%" top="30%" />
-
-                <MapMarker left="72%" top="65%" idle />
-
-                {/* Location Label */}
-                <div className="absolute left-5 top-5 rounded-lg border border-white/10 bg-black/40 px-4 py-3 backdrop-blur-md">
-                  <p className="text-[10px] uppercase tracking-wider text-white/50">
-                    Current region
-                  </p>
-
-                  <p className="mt-1 text-sm font-semibold text-white">
-                    Northern Tanzania
-                  </p>
                 </div>
 
-                {/* Map Controls */}
-                <div className="absolute bottom-5 right-5 overflow-hidden rounded-lg border border-white/10 bg-black/40 backdrop-blur-md">
-                  <button className="flex h-10 w-10 items-center justify-center border-b border-white/10 text-lg text-white">
-                    +
-                  </button>
+                <p className="mt-1 text-xs text-text-muted">
+                  Fleet management shortcuts
+                </p>
 
-                  <button className="flex h-10 w-10 items-center justify-center text-lg text-white">
-                    −
-                  </button>
+              </div>
+
+              <div className="divide-y divide-border">
+
+                {/* VEHICLES */}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push("/dashbord/vehicles")
+                  }
+                  className="group flex w-full items-center gap-4 p-5 text-left transition hover:bg-background"
+                >
+
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
+                    <Truck className="h-5 w-5 text-primary" />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+
+                    <p className="text-sm font-bold">
+                      Vehicles
+                    </p>
+
+                    <p className="mt-1 text-xs text-text-muted">
+                      Register and manage fleet vehicles
+                    </p>
+
+                  </div>
+
+                  <ChevronRight className="h-4 w-4 text-text-muted transition group-hover:translate-x-1 group-hover:text-primary" />
+
+                </button>
+
+                {/* DRIVERS */}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push("/dashbord/drivers")
+                  }
+                  className="group flex w-full items-center gap-4 p-5 text-left transition hover:bg-background"
+                >
+
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+
+                    <p className="text-sm font-bold">
+                      Drivers
+                    </p>
+
+                    <p className="mt-1 text-xs text-text-muted">
+                      Manage driver profiles and assignments
+                    </p>
+
+                  </div>
+
+                  <ChevronRight className="h-4 w-4 text-text-muted transition group-hover:translate-x-1 group-hover:text-primary" />
+
+                </button>
+
+                {/* DEVICES */}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    router.push("/dashbord/devices")
+                  }
+                  className="group flex w-full items-center gap-4 p-5 text-left transition hover:bg-background"
+                >
+
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10">
+                    <Activity className="h-5 w-5 text-primary" />
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+
+                    <p className="text-sm font-bold">
+                      GPS Devices
+                    </p>
+
+                    <p className="mt-1 text-xs text-text-muted">
+                      Connect and monitor tracking devices
+                    </p>
+
+                  </div>
+
+                  <ChevronRight className="h-4 w-4 text-text-muted transition group-hover:translate-x-1 group-hover:text-primary" />
+
+                </button>
+
+              </div>
+
+            </Card>
+
+          </section>
+
+          {/* ==================================================
+              SYSTEM STATUS
+          =================================================== */}
+
+          <section className="mt-6">
+
+            <Card className="p-5">
+
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+
+                <div className="flex items-center gap-4">
+
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-success/10">
+                    <ShieldCheck className="h-5 w-5 text-success" />
+                  </div>
+
+                  <div>
+
+                    <h3 className="text-sm font-bold">
+                      System Status
+                    </h3>
+
+                    <p className="mt-1 text-xs text-text-muted">
+                      Orbit Fleet services are ready for configuration.
+                    </p>
+
+                  </div>
+
                 </div>
+
+                <Badge status="online">
+                  Operational
+                </Badge>
+
               </div>
 
-              {/* Preview Footer */}
-              <div className="grid grid-cols-3 gap-3 pt-4">
-                <PreviewStat
-                  icon={<Truck size={15} />}
-                  value="24"
-                  label="Vehicles"
-                />
+            </Card>
 
-                <PreviewStat
-                  icon={<Activity size={15} />}
-                  value="18"
-                  label="Moving"
-                />
+          </section>
 
-                <PreviewStat
-                  icon={<MapPin size={15} />}
-                  value="12"
-                  label="Locations"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+          {/* FOOTER */}
 
-      {/* Features */}
-      <section
-        id="features"
-        className="border-t border-border bg-background-secondary py-20"
-      >
-        <div className="mx-auto max-w-7xl px-5 md:px-8">
-          <div className="max-w-2xl">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
-              Everything in one place
+          <footer className="py-8 text-center">
+
+            <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-text-muted">
+              Orbit Fleet • Fleet Intelligence Platform
             </p>
 
-            <h2 className="mt-3 font-display text-3xl font-bold tracking-tight md:text-4xl">
-              Complete fleet control
-            </h2>
+          </footer>
 
-            <p className="mt-4 text-text-secondary">
-              Manage your entire fleet operation from a simple and powerful
-              dashboard.
-            </p>
-          </div>
+        </main>
 
-          <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-            <FeatureCard
-              icon={<MapPin size={20} />}
-              title="Live Tracking"
-              description="Monitor vehicle locations and movement in real time."
-            />
-
-            <FeatureCard
-              icon={<Truck size={20} />}
-              title="Vehicle Management"
-              description="Keep complete records of every vehicle in your fleet."
-            />
-
-            <FeatureCard
-              icon={<Activity size={20} />}
-              title="Trip Management"
-              description="Track trips, routes, activity and fleet performance."
-            />
-
-            <FeatureCard
-              icon={<ShieldCheck size={20} />}
-              title="Secure Access"
-              description="Manage users and fleet permissions with secure authentication."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* About */}
-      <section id="about" className="border-t border-border py-20">
-        <div className="mx-auto max-w-7xl px-5 text-center md:px-8">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-primary">
-            Orbit Fleet
-          </p>
-
-          <h2 className="mx-auto mt-3 max-w-3xl font-display text-3xl font-bold tracking-tight md:text-4xl">
-            Smarter fleet operations start here.
-          </h2>
-
-          <p className="mx-auto mt-5 max-w-2xl leading-7 text-text-secondary">
-            Orbit Fleet is built to help fleet owners, managers and
-            organizations understand what is happening across their vehicles
-            and operations.
-          </p>
-
-          <Link
-            href="/login"
-            className="mt-8 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3.5 text-sm font-bold text-white transition hover:bg-primary-hover"
-          >
-            Enter Orbit Fleet
-            <ArrowRight size={17} />
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border py-8">
-        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-3 px-5 text-xs text-text-muted md:flex-row md:px-8">
-          <p>© 2026 Orbit Fleet. All rights reserved.</p>
-
-          <p>Fleet management & GPS tracking platform.</p>
-        </div>
-      </footer>
-    </main>
-  );
-}
-
-/* --------------------------------
-   Feature Card
--------------------------------- */
-
-function FeatureCard({
-  icon,
-  title,
-  description,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="rounded-xl border border-border bg-surface p-6 shadow-[var(--shadow-card)]">
-      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-light text-primary">
-        {icon}
       </div>
 
-      <h3 className="mt-5 font-display text-base font-bold">{title}</h3>
-
-      <p className="mt-2 text-sm leading-6 text-text-secondary">
-        {description}
-      </p>
-    </div>
-  );
-}
-
-/* --------------------------------
-   Preview Stat
--------------------------------- */
-
-function PreviewStat({
-  icon,
-  value,
-  label,
-}: {
-  icon: React.ReactNode;
-  value: string;
-  label: string;
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-background-secondary p-3">
-      <div className="flex items-center gap-2 text-primary">
-        {icon}
-
-        <span className="font-display text-sm font-bold">{value}</span>
-      </div>
-
-      <p className="mt-1 text-[10px] text-text-muted">{label}</p>
-    </div>
-  );
-}
-
-/* --------------------------------
-   Map Marker
--------------------------------- */
-
-function MapMarker({
-  left,
-  top,
-  idle = false,
-}: {
-  left: string;
-  top: string;
-  idle?: boolean;
-}) {
-  return (
-    <div
-      className="absolute"
-      style={{
-        left,
-        top,
-      }}
-    >
-      <div
-        className={`absolute -inset-3 animate-ping rounded-full opacity-25 ${
-          idle ? "bg-warning" : "bg-primary"
-        }`}
-      />
-
-      <div
-        className={`relative flex h-9 w-9 items-center justify-center rounded-full border-2 border-white/20 shadow-lg ${
-          idle ? "bg-warning" : "bg-primary"
-        }`}
-      >
-        <Truck size={15} className="text-white" />
-      </div>
     </div>
   );
 }

@@ -1,2 +1,9 @@
-export * from './auth';
-export * from './users';
+export {
+  login,
+  signUp,
+  logout,
+} from "./auth";
+
+export {
+  createUserProfile,
+} from "./users";

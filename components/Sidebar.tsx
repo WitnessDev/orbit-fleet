@@ -11,12 +11,15 @@ import {
   LogOut,
 } from "lucide-react";
 import { logout } from "@/app/dashbord/database";
+import { useRouter } from "next/navigation";
 
 export default function Sidebar() {
+  const router = useRouter();
+
   const handleLogout = async () => {
     try {
       await logout();
-      window.location.href = "/login";
+      router.push("/login");
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -64,7 +67,7 @@ export default function Sidebar() {
         </Link>
 
         <Link
-          href="/dashbord/map"
+          href="/dashbord/tracking"
           className="flex items-center gap-3 rounded-lg px-4 py-3 hover:bg-emerald-50"
         >
           <Map size={20} />

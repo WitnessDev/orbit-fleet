@@ -1,9 +1,11 @@
+// lib/firebase.ts
+
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyABm0fIPCBWHkABYraK1rjJx9ahpjqqfqg",
+  apiKey: "YOUR_FIREBASE_API_KEY",
   authDomain: "orbit-fleet-dev.firebaseapp.com",
   projectId: "orbit-fleet-dev",
   storageBucket: "orbit-fleet-dev.firebasestorage.app",
@@ -12,10 +14,11 @@ const firebaseConfig = {
   measurementId: "G-C7K5XPJG4K",
 };
 
-const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+const app = getApps().length > 0
+  ? getApp()
+  : initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
-
 export const db = getFirestore(app);
 
 export default app;

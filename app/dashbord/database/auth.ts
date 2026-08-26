@@ -1,18 +1,46 @@
 import { auth } from "@/lib/firebase";
+
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
+  type UserCredential,
 } from "firebase/auth";
 
-export const signUp = async (email: string, password: string) => {
-  return await createUserWithEmailAndPassword(auth, email, password);
+/* ============================================================
+   SIGN UP
+============================================================ */
+
+export const signUp = async (
+  email: string,
+  password: string
+): Promise<UserCredential> => {
+  return await createUserWithEmailAndPassword(
+    auth,
+    email.trim(),
+    password
+  );
 };
 
-export const login = async (email: string, password: string) => {
-  return await signInWithEmailAndPassword(auth, email, password);
+/* ============================================================
+   LOGIN
+============================================================ */
+
+export const login = async (
+  email: string,
+  password: string
+): Promise<UserCredential> => {
+  return await signInWithEmailAndPassword(
+    auth,
+    email.trim(),
+    password
+  );
 };
 
-export const logout = async () => {
-  return await signOut(auth);
+/* ============================================================
+   LOGOUT
+============================================================ */
+
+export const logout = async (): Promise<void> => {
+  await signOut(auth);
 };
