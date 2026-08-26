@@ -1,11 +1,9 @@
-// lib/firebase.ts
-
 import { getApp, getApps, initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "YOUR_FIREBASE_API_KEY",
+  apiKey: "AIzaSyABm0fIPCBWHkABYraK1rjJx9ahpjqqfqg",
   authDomain: "orbit-fleet-dev.firebaseapp.com",
   projectId: "orbit-fleet-dev",
   storageBucket: "orbit-fleet-dev.firebasestorage.app",
