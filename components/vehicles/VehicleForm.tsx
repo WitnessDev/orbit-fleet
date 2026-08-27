@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createVehicle } from "@/lib/firestore";
+import { createVehicle, type VehicleStatus } from "@/lib/firestore";
 
 interface VehicleFormProps {
   onCreated?: () => void;
@@ -12,7 +12,14 @@ export default function VehicleForm({
 }: VehicleFormProps) {
   const [loading, setLoading] = useState(false);
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    registrationNumber: string;
+    make: string;
+    model: string;
+    year: string;
+    color: string;
+    status: VehicleStatus;
+  }>({
     registrationNumber: "",
     make: "",
     model: "",
@@ -67,7 +74,7 @@ export default function VehicleForm({
 
         color: form.color.trim(),
 
-        status: form.status,
+        status: form.status as VehicleStatus,
 
         driverId: null,
 

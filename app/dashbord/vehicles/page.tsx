@@ -1,686 +1,793 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  ArrowLeft,
   Car,
-  Filter,
   MoreHorizontal,
   Plus,
   Search,
   Truck,
   UserRound,
   X,
+  Edit2,
+  Trash2,
+  Check,
+  RefreshCw,
+  Cpu,
+  MapPin,
 } from "lucide-react";
 
+import DashboardLayout from "@/components/DashboardLayout";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import StatCard from "@/components/ui/StatCard";
+import {
+  addVehicle,
+  getVehicles,
+  subscribeVehicles,
+  updateVehicle,
+  deleteVehicle,
+  getDrivers,
+  getDevices,
+  type Vehicle,
+  type VehicleStatus,
+  type Driver,
+  type GPSDevice,
+} from "@/app/dashbord/database";
 
-interface Vehicle {
-  id: string;
-  registration: string;
+interface VehicleFormData {
+  registrationNumber: string;
   make: string;
   model: string;
   year: string;
-  driver: string;
+  color: string;
+  type: string;
+  status: VehicleStatus;
+  driverId: string;
+  deviceId: string;
   location: string;
-  status: "online" | "idle" | "offline";
 }
 
-interface VehicleForm {
-  registration: string;
-  make: string;
-  model: string;
-  year: string;
-  driver: string;
-  location: string;
-  status: "online" | "idle" | "offline";
-}
-
-const emptyForm: VehicleForm = {
-  registration: "",
+const emptyForm: VehicleFormData = {
+  registrationNumber: "",
   make: "",
   model: "",
-  year: "",
-  driver: "",
-  location: "",
+  year: new Date().getFullYear().toString(),
+  color: "White",
+  type: "Delivery Van",
   status: "offline",
+  driverId: "",
+  deviceId: "",
+  location: "Central Depot",
 };
 
 export default function VehiclesPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [drivers, setDrivers] = useState<Driver[]>([]);
+  const [devices, setDevices] = useState<GPSDevice[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [form, setForm] = useState<VehicleForm>(emptyForm);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+  const [viewVehicle, setViewVehicle] = useState<Vehicle | null>(null);
+  const [deleteConfirmVehicle, setDeleteConfirmVehicle] = useState<Vehicle | null>(null);
+
+  const [form, setForm] = useState<VehicleFormData>(emptyForm);
+  const [submitting, setSubmitting] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [feedback, setFeedback] = useState("");
+
+  useEffect(() => {
+    let isMounted = true;
+    Promise.all([getDrivers(), getDevices()])
+      .then(([dList, devList]) => {
+        if (isMounted) {
+          setDrivers(dList);
+          setDevices(devList);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to load drivers/devices:", err);
+      });
+
+    // Real-time listener
+    const unsubscribe = subscribeVehicles(
+      (list) => {
+        if (isMounted) {
+          setVehicles(list);
+          setLoading(false);
+        }
+      },
+      (error) => {
+        console.error("Firestore real-time subscription error:", error);
+        // Fallback fetch
+        getVehicles().then((list) => {
+          if (isMounted) {
+            setVehicles(list);
+            setLoading(false);
+          }
+        });
+      }
+    );
+
+    return () => {
+      isMounted = false;
+      if (typeof unsubscribe === "function") unsubscribe();
+    };
+  }, []);
 
   const totalVehicles = vehicles.length;
+  const onlineVehicles = vehicles.filter((v) => v.status === "online").length;
+  const idleVehicles = vehicles.filter((v) => v.status === "idle").length;
+  const offlineVehicles = vehicles.filter((v) => v.status === "offline").length;
 
-  const onlineVehicles = vehicles.filter(
-    (vehicle) => vehicle.status === "online"
-  ).length;
-
-  const idleVehicles = vehicles.filter(
-    (vehicle) => vehicle.status === "idle"
-  ).length;
-
-  const offlineVehicles = vehicles.filter(
-    (vehicle) => vehicle.status === "offline"
-  ).length;
-
-  const handleInputChange = (
-    field: keyof VehicleForm,
-    value: string
-  ) => {
-    setForm((previous) => ({
-      ...previous,
-      [field]: value,
-    }));
+  const handleInputChange = (field: keyof VehicleFormData, value: string) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleAddVehicle = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const newVehicle: Vehicle = {
-      id: crypto.randomUUID(),
-      registration: form.registration.trim(),
-      make: form.make.trim(),
-      model: form.model.trim(),
-      year: form.year.trim(),
-      driver: form.driver.trim(),
-      location: form.location.trim(),
-      status: form.status,
-    };
-
-    setVehicles((previous) => [...previous, newVehicle]);
-
+  const openAddModal = () => {
     setForm(emptyForm);
-    setShowAddForm(false);
+    setShowAddModal(true);
   };
 
-  const handleCloseForm = () => {
-    setShowAddForm(false);
-    setForm(emptyForm);
+  const openEditModal = (vehicle: Vehicle) => {
+    setEditingVehicle(vehicle);
+    setForm({
+      registrationNumber: vehicle.registrationNumber,
+      make: vehicle.make,
+      model: vehicle.model,
+      year: vehicle.year?.toString() || "",
+      color: vehicle.color || "White",
+      type: vehicle.type || "Delivery Van",
+      status: vehicle.status,
+      driverId: vehicle.driverId || "",
+      deviceId: vehicle.deviceId || "",
+      location: vehicle.location || "Central Depot",
+    });
   };
+
+  const handleSaveVehicle = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.registrationNumber || !form.make || !form.model) {
+      alert("Please fill in Registration Number, Make, and Model.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      const assignedDriver = drivers.find((d) => d.id === form.driverId);
+      const assignedDevice = devices.find((dev) => dev.id === form.deviceId);
+
+      if (editingVehicle) {
+        // Update
+        await updateVehicle(editingVehicle.id, {
+          registrationNumber: form.registrationNumber.trim().toUpperCase(),
+          make: form.make.trim(),
+          model: form.model.trim(),
+          year: form.year ? Number(form.year) : undefined,
+          color: form.color.trim(),
+          type: form.type.trim(),
+          status: form.status,
+          driverId: form.driverId || null,
+          driverName: assignedDriver ? assignedDriver.name : null,
+          deviceId: form.deviceId || null,
+          deviceSerial: assignedDevice ? assignedDevice.deviceId : null,
+          location: form.location.trim(),
+        });
+        setFeedback(`Vehicle ${form.registrationNumber} updated successfully.`);
+        setEditingVehicle(null);
+      } else {
+        // Create
+        await addVehicle({
+          registrationNumber: form.registrationNumber.trim().toUpperCase(),
+          make: form.make.trim(),
+          model: form.model.trim(),
+          year: form.year ? Number(form.year) : undefined,
+          color: form.color.trim(),
+          type: form.type.trim(),
+          status: form.status,
+          driverId: form.driverId || null,
+          driverName: assignedDriver ? assignedDriver.name : null,
+          deviceId: form.deviceId || null,
+          deviceSerial: assignedDevice ? assignedDevice.deviceId : null,
+          location: form.location.trim(),
+        });
+        setFeedback(`Vehicle ${form.registrationNumber} added to fleet.`);
+        setShowAddModal(false);
+      }
+
+      setForm(emptyForm);
+      setTimeout(() => setFeedback(""), 4000);
+    } catch (err) {
+      console.error("Error saving vehicle:", err);
+      alert("Failed to save vehicle. Please check network/Firestore.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteConfirmVehicle) return;
+    try {
+      setSubmitting(true);
+      await deleteVehicle(deleteConfirmVehicle.id);
+      setFeedback(`Vehicle ${deleteConfirmVehicle.registrationNumber} removed.`);
+      setDeleteConfirmVehicle(null);
+      setTimeout(() => setFeedback(""), 4000);
+    } catch (err) {
+      console.error("Error deleting vehicle:", err);
+      alert("Failed to delete vehicle.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const filteredVehicles = vehicles.filter((v) => {
+    const q = search.toLowerCase();
+    const matchesSearch =
+      v.registrationNumber?.toLowerCase().includes(q) ||
+      v.make?.toLowerCase().includes(q) ||
+      v.model?.toLowerCase().includes(q) ||
+      v.driverName?.toLowerCase().includes(q) ||
+      v.location?.toLowerCase().includes(q);
+
+    const matchesStatus =
+      statusFilter === "all" || v.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
 
   return (
-    <div className="min-h-screen bg-background text-text-primary">
-      <main className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
+    <DashboardLayout title="Vehicles Management">
+      {/* Top action header */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Truck className="h-6 w-6" />
+          </div>
+          <div>
+            <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl text-text-primary">
+              Fleet Vehicles (Day 7)
+            </h1>
+            <p className="mt-1 text-sm text-text-secondary">
+              Register, edit, assign drivers, and monitor fleet vehicle status in real-time.
+            </p>
+          </div>
+        </div>
 
-        {/* =====================================================
-            TOP NAVIGATION
-        ====================================================== */}
-
-        <div className="mb-6 flex items-center justify-between gap-4">
-          <a
-            href="/dashbord"
-            className="group inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-text-secondary transition hover:bg-surface hover:text-primary"
-          >
-            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-
-            Back to Dashboard
-          </a>
-
-          <Button onClick={() => setShowAddForm(true)}>
+        <div className="flex items-center gap-2">
+          <Button onClick={openAddModal}>
             <Plus className="h-4 w-4" />
-
             Add Vehicle
           </Button>
         </div>
+      </div>
 
-        {/* =====================================================
-            PAGE HEADER
-        ====================================================== */}
+      {/* Feedback banner */}
+      {feedback && (
+        <div className="mb-6 flex items-center gap-2 rounded-xl bg-emerald-50 p-4 text-sm font-bold text-emerald-800 border border-emerald-200">
+          <Check className="h-5 w-5 text-emerald-600" />
+          {feedback}
+        </div>
+      )}
 
-        <div className="mb-8">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-              <Truck className="h-6 w-6 text-primary" />
+      {/* Statistics */}
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Total Vehicles"
+          value={totalVehicles.toString()}
+          detail="Vehicles currently registered"
+          status="primary"
+        />
+        <StatCard
+          label="Online"
+          value={onlineVehicles.toString()}
+          detail="Active telemetry signal"
+          status="success"
+        />
+        <StatCard
+          label="Idle"
+          value={idleVehicles.toString()}
+          detail="Stationary / Ignition off"
+          status="warning"
+        />
+        <StatCard
+          label="Offline"
+          value={offlineVehicles.toString()}
+          detail="Disconnected / In storage"
+          status="danger"
+        />
+      </div>
+
+      {/* Vehicles Table Card */}
+      <Card className="overflow-hidden">
+        {/* Search & Filter bar */}
+        <div className="flex flex-col gap-4 border-b border-border p-5 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="font-display text-base font-bold text-text-primary">
+              Registered Fleet
+            </h2>
+            <p className="mt-1 text-xs text-text-muted">
+              {vehicles.length === 0
+                ? "No vehicles registered yet in Firestore."
+                : `${vehicles.length} total vehicle${vehicles.length === 1 ? "" : "s"} in database.`}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Filter buttons */}
+            <div className="flex rounded-lg border border-border bg-background p-1 text-xs font-semibold">
+              {(["all", "online", "idle", "offline"] as const).map((st) => (
+                <button
+                  key={st}
+                  onClick={() => setStatusFilter(st)}
+                  className={`rounded-md px-3 py-1.5 capitalize transition ${
+                    statusFilter === st
+                      ? "bg-surface text-primary shadow-sm font-bold"
+                      : "text-text-muted hover:text-text-primary"
+                  }`}
+                >
+                  {st}
+                </button>
+              ))}
             </div>
 
-            <div>
-              <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
-                Vehicles
-              </h1>
-
-              <p className="mt-1 text-sm text-text-secondary">
-                Manage and monitor your fleet vehicles.
-              </p>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search registration, make, driver..."
+                className="h-10 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-xs outline-none focus:border-primary sm:w-64"
+              />
             </div>
           </div>
         </div>
 
-        {/* =====================================================
-            STATISTICS
-        ====================================================== */}
+        {/* Content */}
+        {loading ? (
+          <div className="flex min-h-[300px] items-center justify-center p-8 text-sm text-text-muted">
+            <RefreshCw className="mr-2 h-4 w-4 animate-spin text-primary" />
+            Loading vehicles from Firestore...
+          </div>
+        ) : filteredVehicles.length === 0 ? (
+          <div className="flex min-h-[360px] flex-col items-center justify-center p-8 text-center">
+            <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+              <Car className="h-8 w-8 text-primary" />
+            </div>
+            <h3 className="font-display text-lg font-bold text-text-primary">
+              No vehicles found
+            </h3>
+            <p className="mt-2 max-w-md text-sm text-text-muted">
+              {search || statusFilter !== "all"
+                ? "No vehicle matched your current filter criteria."
+                : "Your fleet is currently empty. Add your first vehicle to start tracking."}
+            </p>
+            <Button className="mt-6" onClick={openAddModal}>
+              <Plus className="h-4 w-4" />
+              Add Your First Vehicle
+            </Button>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-border bg-background/50">
+                  <th className="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                    Vehicle
+                  </th>
+                  <th className="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                    Assigned Driver
+                  </th>
+                  <th className="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                    GPS Device
+                  </th>
+                  <th className="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                    Location
+                  </th>
+                  <th className="px-5 py-3.5 text-left text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                    Status
+                  </th>
+                  <th className="px-5 py-3.5 text-right text-[10px] font-bold uppercase tracking-wider text-text-muted">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filteredVehicles.map((v) => (
+                  <tr key={v.id} className="transition hover:bg-surface-hover/60">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                          <Car className="h-5 w-5" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-text-primary">
+                            {v.registrationNumber}
+                          </p>
+                          <p className="text-xs text-text-muted">
+                            {v.make} {v.model} {v.year ? `(${v.year})` : ""} • {v.color || "White"}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
 
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <StatCard
-            label="Total Vehicles"
-            value={totalVehicles.toString()}
-            detail="Vehicles currently registered"
-            status="primary"
-          />
+                    <td className="px-5 py-4">
+                      {v.driverName ? (
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <UserRound className="h-3.5 w-3.5" />
+                          </div>
+                          <span className="text-xs font-semibold text-text-primary">
+                            {v.driverName}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-text-muted italic">Unassigned</span>
+                      )}
+                    </td>
 
-          <StatCard
-            label="Online"
-            value={onlineVehicles.toString()}
-            detail="Currently connected"
-            status="success"
-          />
+                    <td className="px-5 py-4">
+                      {v.deviceSerial || v.deviceId ? (
+                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-mono font-medium text-slate-700">
+                          <Cpu className="h-3 w-3 text-emerald-600" />
+                          {v.deviceSerial || v.deviceId?.slice(0, 8)}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-text-muted italic">No GPS</span>
+                      )}
+                    </td>
 
-          <StatCard
-            label="Idle"
-            value={idleVehicles.toString()}
-            detail="Currently stationary"
-            status="warning"
-          />
+                    <td className="px-5 py-4">
+                      <span className="flex items-center gap-1 text-xs text-text-secondary">
+                        <MapPin className="h-3.5 w-3.5 text-text-muted" />
+                        {v.location || "Central Garage"}
+                      </span>
+                    </td>
 
-          <StatCard
-            label="Offline"
-            value={offlineVehicles.toString()}
-            detail="Currently disconnected"
-            status="danger"
-          />
-        </div>
+                    <td className="px-5 py-4">
+                      <Badge status={v.status}>{v.status}</Badge>
+                    </td>
 
-        {/* =====================================================
-            ADD VEHICLE FORM
-        ====================================================== */}
+                    <td className="px-5 py-4 text-right">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setViewVehicle(v)}
+                          className="rounded-lg p-2 text-text-muted hover:bg-surface-hover hover:text-text-primary transition"
+                          title="View Details"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </button>
 
-        {showAddForm && (
-          <Card className="mb-6 overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(v)}
+                          className="rounded-lg p-2 text-text-muted hover:bg-surface-hover hover:text-primary transition"
+                          title="Edit Vehicle"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
 
-            {/* Form Header */}
+                        <button
+                          type="button"
+                          onClick={() => setDeleteConfirmVehicle(v)}
+                          className="rounded-lg p-2 text-text-muted hover:bg-danger/10 hover:text-danger transition"
+                          title="Delete Vehicle"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
 
-            <div className="flex items-center justify-between border-b border-border p-5">
-              <div>
-                <h2 className="font-display text-lg font-semibold">
-                  Add Vehicle
-                </h2>
-
-                <p className="mt-1 text-xs text-text-muted">
-                  Enter the vehicle information below.
-                </p>
+      {/* =======================================================
+          ADD / EDIT VEHICLE MODAL
+      ======================================================== */}
+      {(showAddModal || editingVehicle) && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="my-8 w-full max-w-2xl rounded-2xl bg-surface p-6 shadow-2xl border border-border">
+            <div className="flex items-center justify-between border-b border-border pb-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Truck className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="font-display text-lg font-bold text-text-primary">
+                    {editingVehicle ? "Edit Vehicle" : "Add New Vehicle"}
+                  </h2>
+                  <p className="text-xs text-text-muted">
+                    Save vehicle parameters, assigned driver, and GPS tracker directly to Firestore.
+                  </p>
+                </div>
               </div>
-
               <button
                 type="button"
-                onClick={handleCloseForm}
-                className="rounded-lg p-2 text-text-muted transition hover:bg-surface-hover hover:text-text-primary"
-                aria-label="Close add vehicle form"
+                onClick={() => {
+                  setShowAddModal(false);
+                  setEditingVehicle(null);
+                }}
+                className="rounded-lg p-2 text-text-muted hover:bg-surface-hover"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            {/* Form */}
-
-            <form
-              onSubmit={handleAddVehicle}
-              className="p-5"
-            >
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-
-                {/* Registration */}
-
+            <form onSubmit={handleSaveVehicle} className="mt-5 space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label
-                    htmlFor="registration"
-                    className="mb-2 block text-xs font-bold text-text-secondary"
-                  >
-                    Registration Number
+                  <label className="mb-1 block text-xs font-bold text-text-secondary">
+                    Registration Number *
                   </label>
-
                   <input
-                    id="registration"
                     type="text"
-                    value={form.registration}
-                    onChange={(event) =>
-                      handleInputChange(
-                        "registration",
-                        event.target.value
-                      )
-                    }
-                    placeholder="Enter registration number"
                     required
-                    className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none transition placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/10"
+                    value={form.registrationNumber}
+                    onChange={(e) => handleInputChange("registrationNumber", e.target.value)}
+                    placeholder="e.g. T 452 DRZ"
+                    className="h-10 w-full rounded-lg border border-border bg-background px-3 text-xs outline-none focus:border-primary uppercase"
                   />
                 </div>
 
-                {/* Make */}
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-text-secondary">
+                    Vehicle Type
+                  </label>
+                  <select
+                    value={form.type}
+                    onChange={(e) => handleInputChange("type", e.target.value)}
+                    className="h-10 w-full rounded-lg border border-border bg-background px-3 text-xs outline-none focus:border-primary"
+                  >
+                    <option value="Delivery Van">Delivery Van</option>
+                    <option value="Heavy Truck">Heavy Truck</option>
+                    <option value="Pickup 4x4">Pickup 4x4</option>
+                    <option value="Sedan">Sedan</option>
+                    <option value="Motorcycle">Motorcycle</option>
+                  </select>
+                </div>
 
                 <div>
-                  <label
-                    htmlFor="make"
-                    className="mb-2 block text-xs font-bold text-text-secondary"
-                  >
-                    Make
+                  <label className="mb-1 block text-xs font-bold text-text-secondary">
+                    Make *
                   </label>
-
                   <input
-                    id="make"
                     type="text"
+                    required
                     value={form.make}
-                    onChange={(event) =>
-                      handleInputChange(
-                        "make",
-                        event.target.value
-                      )
-                    }
-                    placeholder="Enter vehicle make"
-                    required
-                    className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none transition placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/10"
+                    onChange={(e) => handleInputChange("make", e.target.value)}
+                    placeholder="e.g. Toyota"
+                    className="h-10 w-full rounded-lg border border-border bg-background px-3 text-xs outline-none focus:border-primary"
                   />
                 </div>
 
-                {/* Model */}
-
                 <div>
-                  <label
-                    htmlFor="model"
-                    className="mb-2 block text-xs font-bold text-text-secondary"
-                  >
-                    Model
+                  <label className="mb-1 block text-xs font-bold text-text-secondary">
+                    Model *
                   </label>
-
                   <input
-                    id="model"
                     type="text"
+                    required
                     value={form.model}
-                    onChange={(event) =>
-                      handleInputChange(
-                        "model",
-                        event.target.value
-                      )
-                    }
-                    placeholder="Enter vehicle model"
-                    required
-                    className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none transition placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/10"
+                    onChange={(e) => handleInputChange("model", e.target.value)}
+                    placeholder="e.g. Hilux Double Cabin"
+                    className="h-10 w-full rounded-lg border border-border bg-background px-3 text-xs outline-none focus:border-primary"
                   />
                 </div>
 
-                {/* Year */}
-
                 <div>
-                  <label
-                    htmlFor="year"
-                    className="mb-2 block text-xs font-bold text-text-secondary"
-                  >
-                    Year
+                  <label className="mb-1 block text-xs font-bold text-text-secondary">
+                    Manufacturing Year
                   </label>
-
                   <input
-                    id="year"
                     type="number"
-                    min="1900"
-                    max="2100"
+                    min="1990"
+                    max="2030"
                     value={form.year}
-                    onChange={(event) =>
-                      handleInputChange(
-                        "year",
-                        event.target.value
-                      )
-                    }
-                    placeholder="Enter vehicle year"
-                    className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none transition placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/10"
+                    onChange={(e) => handleInputChange("year", e.target.value)}
+                    placeholder="2024"
+                    className="h-10 w-full rounded-lg border border-border bg-background px-3 text-xs outline-none focus:border-primary"
                   />
                 </div>
 
-                {/* Driver */}
-
                 <div>
-                  <label
-                    htmlFor="driver"
-                    className="mb-2 block text-xs font-bold text-text-secondary"
-                  >
-                    Driver
+                  <label className="mb-1 block text-xs font-bold text-text-secondary">
+                    Color
                   </label>
-
                   <input
-                    id="driver"
                     type="text"
-                    value={form.driver}
-                    onChange={(event) =>
-                      handleInputChange(
-                        "driver",
-                        event.target.value
-                      )
-                    }
-                    placeholder="Enter driver name"
-                    className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none transition placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/10"
+                    value={form.color}
+                    onChange={(e) => handleInputChange("color", e.target.value)}
+                    placeholder="e.g. Silver White"
+                    className="h-10 w-full rounded-lg border border-border bg-background px-3 text-xs outline-none focus:border-primary"
                   />
                 </div>
 
-                {/* Location */}
-
                 <div>
-                  <label
-                    htmlFor="location"
-                    className="mb-2 block text-xs font-bold text-text-secondary"
-                  >
-                    Current Location
+                  <label className="mb-1 block text-xs font-bold text-text-secondary">
+                    Assign Driver (Day 8 Relational link)
                   </label>
-
-                  <input
-                    id="location"
-                    type="text"
-                    value={form.location}
-                    onChange={(event) =>
-                      handleInputChange(
-                        "location",
-                        event.target.value
-                      )
-                    }
-                    placeholder="Enter current location"
-                    className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none transition placeholder:text-text-muted focus:border-primary focus:ring-2 focus:ring-primary/10"
-                  />
+                  <select
+                    value={form.driverId}
+                    onChange={(e) => handleInputChange("driverId", e.target.value)}
+                    className="h-10 w-full rounded-lg border border-border bg-background px-3 text-xs outline-none focus:border-primary"
+                  >
+                    <option value="">-- No Driver Assigned --</option>
+                    {drivers.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name} ({d.licenseNumber})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                {/* Status */}
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-text-secondary">
+                    Assign GPS Device (Day 9 Device link)
+                  </label>
+                  <select
+                    value={form.deviceId}
+                    onChange={(e) => handleInputChange("deviceId", e.target.value)}
+                    className="h-10 w-full rounded-lg border border-border bg-background px-3 text-xs outline-none focus:border-primary"
+                  >
+                    <option value="">-- No GPS Tracker Assigned --</option>
+                    {devices.map((dev) => (
+                      <option key={dev.id} value={dev.id}>
+                        {dev.deviceId} • {dev.model} ({dev.imei})
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
                 <div>
-                  <label
-                    htmlFor="status"
-                    className="mb-2 block text-xs font-bold text-text-secondary"
-                  >
+                  <label className="mb-1 block text-xs font-bold text-text-secondary">
                     Status
                   </label>
-
                   <select
-                    id="status"
                     value={form.status}
-                    onChange={(event) =>
-                      handleInputChange(
-                        "status",
-                        event.target.value
-                      )
-                    }
-                    className="h-11 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                    onChange={(e) => handleInputChange("status", e.target.value as VehicleStatus)}
+                    className="h-10 w-full rounded-lg border border-border bg-background px-3 text-xs outline-none focus:border-primary"
                   >
-                    <option value="offline">
-                      Offline
-                    </option>
-
-                    <option value="idle">
-                      Idle
-                    </option>
-
-                    <option value="online">
-                      Online
-                    </option>
+                    <option value="online">Online (Active on Road)</option>
+                    <option value="idle">Idle (Stationary)</option>
+                    <option value="offline">Offline (Parked/Depot)</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-text-secondary">
+                    Current Base / Location
+                  </label>
+                  <input
+                    type="text"
+                    value={form.location}
+                    onChange={(e) => handleInputChange("location", e.target.value)}
+                    placeholder="e.g. Dar Port Terminal 2"
+                    className="h-10 w-full rounded-lg border border-border bg-background px-3 text-xs outline-none focus:border-primary"
+                  />
                 </div>
               </div>
 
-              {/* Form Actions */}
-
-              <div className="mt-6 flex flex-col-reverse gap-3 border-t border-border pt-5 sm:flex-row sm:justify-end">
+              <div className="flex justify-end gap-2 border-t border-border pt-4">
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={handleCloseForm}
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setEditingVehicle(null);
+                  }}
+                  disabled={submitting}
                 >
                   Cancel
                 </Button>
-
-                <Button type="submit">
-                  <Plus className="h-4 w-4" />
-
-                  Save Vehicle
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? "Saving..." : editingVehicle ? "Save Changes" : "Create Vehicle"}
                 </Button>
               </div>
             </form>
-          </Card>
-        )}
+          </div>
+        </div>
+      )}
 
-        {/* =====================================================
-            VEHICLES CARD
-        ====================================================== */}
-
-        <Card className="overflow-hidden">
-
-          {/* Search / Filter */}
-
-          <div className="flex flex-col gap-4 border-b border-border p-5 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <h2 className="font-display text-base font-semibold">
-                Fleet Vehicles
-              </h2>
-
-              <p className="mt-1 text-xs text-text-muted">
-                {vehicles.length === 0
-                  ? "No vehicles have been added yet."
-                  : `${vehicles.length} vehicle${
-                      vehicles.length === 1 ? "" : "s"
-                    } in your fleet.`}
-              </p>
+      {/* =======================================================
+          VIEW VEHICLE DETAILS MODAL
+      ======================================================== */}
+      {viewVehicle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg rounded-2xl bg-surface p-6 shadow-2xl border border-border">
+            <div className="flex items-center justify-between border-b border-border pb-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Car className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="font-display text-lg font-bold text-text-primary">
+                    {viewVehicle.registrationNumber}
+                  </h3>
+                  <p className="text-xs text-text-muted">
+                    {viewVehicle.make} {viewVehicle.model} {viewVehicle.year ? `(${viewVehicle.year})` : ""}
+                  </p>
+                </div>
+              </div>
+              <Badge status={viewVehicle.status}>{viewVehicle.status}</Badge>
             </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row">
-
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-
-                <input
-                  type="search"
-                  placeholder="Search vehicles..."
-                  className="h-10 w-full rounded-lg border border-border bg-background pl-9 pr-4 text-sm outline-none transition placeholder:text-text-muted focus:border-primary sm:w-64"
-                />
+            <div className="my-5 grid grid-cols-2 gap-3 text-xs">
+              <div className="rounded-xl bg-background p-3">
+                <p className="text-text-muted text-[10px] font-bold uppercase tracking-wider">Driver</p>
+                <p className="mt-1 font-bold text-text-primary">{viewVehicle.driverName || "Not assigned"}</p>
               </div>
+              <div className="rounded-xl bg-background p-3">
+                <p className="text-text-muted text-[10px] font-bold uppercase tracking-wider">GPS Device</p>
+                <p className="mt-1 font-bold text-text-primary">{viewVehicle.deviceSerial || "Not connected"}</p>
+              </div>
+              <div className="rounded-xl bg-background p-3">
+                <p className="text-text-muted text-[10px] font-bold uppercase tracking-wider">Location</p>
+                <p className="mt-1 font-bold text-text-primary">{viewVehicle.location || "Central Garage"}</p>
+              </div>
+              <div className="rounded-xl bg-background p-3">
+                <p className="text-text-muted text-[10px] font-bold uppercase tracking-wider">Color & Type</p>
+                <p className="mt-1 font-bold text-text-primary">{viewVehicle.color || "White"} • {viewVehicle.type || "Vehicle"}</p>
+              </div>
+            </div>
 
-              <Button variant="secondary">
-                <Filter className="h-4 w-4" />
-
-                Filter
+            <div className="flex justify-end gap-2 border-t border-border pt-4">
+              <Button variant="secondary" onClick={() => setViewVehicle(null)}>
+                Close
+              </Button>
+              <Button
+                onClick={() => {
+                  const target = viewVehicle;
+                  setViewVehicle(null);
+                  openEditModal(target);
+                }}
+              >
+                <Edit2 className="h-3.5 w-3.5 mr-1" /> Edit Vehicle
               </Button>
             </div>
           </div>
+        </div>
+      )}
 
-          {/* =====================================================
-              EMPTY STATE
-          ====================================================== */}
-
-          {vehicles.length === 0 ? (
-            <div className="flex min-h-[420px] flex-col items-center justify-center px-6 py-16 text-center">
-
-              <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-                <Car className="h-8 w-8 text-primary" />
-              </div>
-
-              <h3 className="font-display text-lg font-semibold">
-                No vehicles yet
-              </h3>
-
-              <p className="mt-2 max-w-md text-sm leading-6 text-text-muted">
-                Your fleet is currently empty. Add your first vehicle
-                to start managing your fleet.
-              </p>
-
+      {/* =======================================================
+          DELETE CONFIRM MODAL
+      ======================================================== */}
+      {deleteConfirmVehicle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-2xl border border-border text-center">
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-danger/10 text-danger">
+              <Trash2 className="h-6 w-6" />
+            </div>
+            <h3 className="font-display text-base font-bold text-text-primary">
+              Delete Vehicle?
+            </h3>
+            <p className="mt-2 text-xs text-text-muted">
+              Are you sure you want to remove <strong>{deleteConfirmVehicle.registrationNumber}</strong> from the fleet database?
+            </p>
+            <div className="mt-6 flex justify-center gap-3">
               <Button
-                className="mt-6"
-                onClick={() => setShowAddForm(true)}
+                variant="secondary"
+                onClick={() => setDeleteConfirmVehicle(null)}
+                disabled={submitting}
               >
-                <Plus className="h-4 w-4" />
-
-                Add Your First Vehicle
+                Cancel
+              </Button>
+              <Button variant="danger" onClick={handleDelete} disabled={submitting}>
+                {submitting ? "Deleting..." : "Confirm Delete"}
               </Button>
             </div>
-          ) : (
-            <>
-              {/* =================================================
-                  DESKTOP TABLE
-              ================================================== */}
-
-              <div className="hidden overflow-x-auto md:block">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-border bg-background/60">
-                      <th className="px-5 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                        Vehicle
-                      </th>
-
-                      <th className="px-5 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                        Driver
-                      </th>
-
-                      <th className="px-5 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                        Location
-                      </th>
-
-                      <th className="px-5 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                        Status
-                      </th>
-
-                      <th className="px-5 py-4 text-right text-[10px] font-bold uppercase tracking-wider text-text-muted">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-
-                  <tbody className="divide-y divide-border">
-                    {vehicles.map((vehicle) => (
-                      <tr
-                        key={vehicle.id}
-                        className="transition hover:bg-background/60"
-                      >
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                              <Car className="h-5 w-5 text-primary" />
-                            </div>
-
-                            <div>
-                              <p className="text-sm font-bold">
-                                {vehicle.registration}
-                              </p>
-
-                              <p className="mt-0.5 text-xs text-text-muted">
-                                {vehicle.make} {vehicle.model}
-
-                                {vehicle.year &&
-                                  ` • ${vehicle.year}`}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="px-5 py-4">
-                          {vehicle.driver ? (
-                            <div className="flex items-center gap-2">
-                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-background">
-                                <UserRound className="h-4 w-4 text-text-muted" />
-                              </div>
-
-                              <span className="text-sm text-text-secondary">
-                                {vehicle.driver}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-text-muted">
-                              Not assigned
-                            </span>
-                          )}
-                        </td>
-
-                        <td className="px-5 py-4">
-                          <span className="text-sm text-text-secondary">
-                            {vehicle.location || "Unavailable"}
-                          </span>
-                        </td>
-
-                        <td className="px-5 py-4">
-                          <Badge status={vehicle.status}>
-                            {vehicle.status}
-                          </Badge>
-                        </td>
-
-                        <td className="px-5 py-4 text-right">
-                          <button
-                            type="button"
-                            className="rounded-lg p-2 text-text-muted transition hover:bg-surface-hover hover:text-text-primary"
-                            aria-label={`Actions for ${vehicle.registration}`}
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* =================================================
-                  MOBILE CARDS
-              ================================================== */}
-
-              <div className="divide-y divide-border md:hidden">
-                {vehicles.map((vehicle) => (
-                  <div
-                    key={vehicle.id}
-                    className="p-4"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                          <Car className="h-5 w-5 text-primary" />
-                        </div>
-
-                        <div>
-                          <p className="text-sm font-bold">
-                            {vehicle.registration}
-                          </p>
-
-                          <p className="mt-1 text-xs text-text-muted">
-                            {vehicle.make} {vehicle.model}
-                          </p>
-                        </div>
-                      </div>
-
-                      <Badge status={vehicle.status}>
-                        {vehicle.status}
-                      </Badge>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-2 gap-3">
-                      <div className="rounded-lg bg-background p-3">
-                        <p className="text-[9px] font-bold uppercase tracking-wider text-text-muted">
-                          Driver
-                        </p>
-
-                        <p className="mt-1 text-xs font-semibold">
-                          {vehicle.driver || "Not assigned"}
-                        </p>
-                      </div>
-
-                      <div className="rounded-lg bg-background p-3">
-                        <p className="text-[9px] font-bold uppercase tracking-wider text-text-muted">
-                          Location
-                        </p>
-
-                        <p className="mt-1 text-xs font-semibold">
-                          {vehicle.location || "Unavailable"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </Card>
-
-        {/* =====================================================
-            FOOTER
-        ====================================================== */}
-
-        <div className="mt-6 flex justify-center">
-          <p className="text-[10px] text-text-muted">
-            Orbit Fleet • Fleet Management
-          </p>
+          </div>
         </div>
-      </main>
-    </div>
+      )}
+    </DashboardLayout>
   );
 }

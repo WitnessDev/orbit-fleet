@@ -4,6 +4,9 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
+  sendPasswordResetEmail,
+  onAuthStateChanged,
+  type User,
   type UserCredential,
 } from "firebase/auth";
 
@@ -43,4 +46,20 @@ export const login = async (
 
 export const logout = async (): Promise<void> => {
   await signOut(auth);
+};
+
+/* ============================================================
+   PASSWORD RESET (Day 4)
+============================================================ */
+
+export const resetPassword = async (email: string): Promise<void> => {
+  await sendPasswordResetEmail(auth, email.trim());
+};
+
+/* ============================================================
+   AUTH STATE LISTENER
+============================================================ */
+
+export const onAuthUserChanged = (callback: (user: User | null) => void) => {
+  return onAuthStateChanged(auth, callback);
 };

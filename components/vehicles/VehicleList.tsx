@@ -7,22 +7,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-import { getVehicles } from "@/lib/firestore";
+import { getVehicles, type Vehicle } from "@/lib/firestore";
 import VehicleStatusBadge from "@/components/ui/Badge";
-
-interface Vehicle {
-  id: string;
-  registrationNumber: string;
-  make: string;
-  model: string;
-  year?: number | null;
-  color?: string | null;
-  status:
-    | "active"
-    | "inactive"
-    | "maintenance"
-    | "suspended";
-}
 
 interface VehicleListProps {
   refreshKey?: number;

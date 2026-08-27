@@ -1,18 +1,4 @@
-// app/dashbord/database/index.ts
-
-// ============================================================
-// FIREBASE AUTHENTICATION
-// ============================================================
-
-import { auth, db } from "@/lib/firebase";
-
-import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  type UserCredential,
-} from "firebase/auth";
-
+import { db } from "@/lib/firebase";
 import {
   collection,
   doc,
@@ -20,82 +6,27 @@ import {
   getDocs,
   setDoc,
   updateDoc,
+  deleteDoc,
+  query,
+  orderBy,
 } from "firebase/firestore";
+import type { UserProfile, UserRole } from "@/lib/types/user";
 
-// ============================================================
-// USER ROLES
-// ============================================================
+export type { UserProfile, UserRole };
 
-export type UserRole =
-  | "super_admin"
-  | "manager"
-  | "driver";
+const usersCollection = collection(db, "users");
 
-// ============================================================
-// USER PROFILE
-// ============================================================
-
-export interface UserProfile {
-  uid: string;
-  email: string;
-  name: string;
-  role: UserRole;
-  createdAt: string;
-}
-
-// ============================================================
-// SIGN UP
-// ============================================================
-
-export const signUp = async (
-  email: string,
-  password: string
-): Promise<UserCredential> => {
-  const userCredential =
-    await createUserWithEmailAndPassword(
-      auth,
-      email.trim(),
-      password
-    );
-
-  return userCredential;
-};
-
-// ============================================================
-// LOGIN
-// ============================================================
-
-export const login = async (
-  email: string,
-  password: string
-): Promise<UserCredential> => {
-  const userCredential =
-    await signInWithEmailAndPassword(
-      auth,
-      email.trim(),
-      password
-    );
-
-  return userCredential;
-};
-
-// ============================================================
-// LOGOUT
-// ============================================================
-
-export const logout = async (): Promise<void> => {
-  await signOut(auth);
-};
-
-// ============================================================
-// CREATE USER PROFILE
-// ============================================================
+/* ============================================================
+   CREATE USER PROFILE (Day 5)
+============================================================ */
 
 export const createUserProfile = async (
   uid: string,
   email: string,
   name: string,
-  role: UserRole = "driver"
+  role: UserRole = "driver",
+  phone?: string,
+  department?: string
 ): Promise<UserProfile> => {
   const userRef = doc(db, "users", uid);
 
@@ -104,58 +35,96 @@ export const createUserProfile = async (
     email: email.trim(),
     name: name.trim() || "New User",
     role,
+    phone: phone?.trim() || "",
+    department: department?.trim() || "Operations",
     createdAt: new Date().toISOString(),
   };
 
-  await setDoc(userRef, profile);
+  await setDoc(userRef, profile, { merge: true });
 
   return profile;
 };
 
-// ============================================================
-// GET USER PROFILE
-// ============================================================
+/* ============================================================
+   GET USER PROFILE
+============================================================ */
 
 export const getUserProfile = async (
   uid: string
 ): Promise<UserProfile | null> => {
-  const userRef = doc(db, "users", uid);
+  try {
+    const userRef = doc(db, "users", uid);
+    const snapshot = await getDoc(userRef);
 
-  const snapshot = await getDoc(userRef);
+    if (!snapshot.exists()) {
+      return null;
+    }
 
-  if (!snapshot.exists()) {
+    return snapshot.data() as UserProfile;
+  } catch (error) {
+    console.error("Error getting user profile:", error);
     return null;
   }
-
-  return snapshot.data() as UserProfile;
 };
 
-// ============================================================
-// UPDATE USER ROLE
-// ============================================================
+/* ============================================================
+   UPDATE USER ROLE (Day 5 RBAC)
+============================================================ */
 
 export const updateUserRole = async (
   uid: string,
   role: UserRole
 ): Promise<void> => {
   const userRef = doc(db, "users", uid);
-
   await updateDoc(userRef, {
     role,
+    updatedAt: new Date().toISOString(),
   });
 };
 
-// ============================================================
-// GET ALL USERS
-// ============================================================
+/* ============================================================
+   UPDATE USER PROFILE
+============================================================ */
 
-export const getAllUsers = async () => {
-  const usersRef = collection(db, "users");
+export const updateUserProfile = async (
+  uid: string,
+  updates: Partial<UserProfile>
+): Promise<void> => {
+  const userRef = doc(db, "users", uid);
+  await updateDoc(userRef, {
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  });
+};
 
-  const snapshot = await getDocs(usersRef);
+/* ============================================================
+   GET ALL USERS (Day 5 User Management)
+============================================================ */
 
-  return snapshot.docs.map((userDoc) => ({
-    id: userDoc.id,
-    ...userDoc.data(),
-  }));
+export const getAllUsers = async (): Promise<UserProfile[]> => {
+  try {
+    const usersQuery = query(usersCollection, orderBy("createdAt", "desc"));
+    const snapshot = await getDocs(usersQuery);
+
+    return snapshot.docs.map((userDoc) => ({
+      uid: userDoc.id,
+      ...userDoc.data(),
+    })) as UserProfile[];
+  } catch {
+    // Fallback if index on createdAt is building
+    const snapshot = await getDocs(usersCollection);
+    return snapshot.docs.map((userDoc) => ({
+      uid: userDoc.id,
+      ...userDoc.data(),
+    })) as UserProfile[];
+  }
+};
+
+/* ============================================================
+   DELETE USER PROFILE
+============================================================ */
+
+export const deleteUserProfile = async (uid: string): Promise<void> => {
+  const userRef = doc(db, "users", uid);
+  await deleteDoc(userRef);
 };

@@ -1,4 +1,7 @@
 export type VehicleStatus =
+  | "online"
+  | "idle"
+  | "offline"
   | "active"
   | "inactive"
   | "maintenance"
@@ -9,13 +12,19 @@ export interface Vehicle {
   registrationNumber: string;
   make: string;
   model: string;
-  year?: number;
-  color?: string;
+  year?: number | string | null;
+  color?: string | null;
+  type?: string | null;
   status: VehicleStatus;
   driverId?: string | null;
+  driverName?: string | null;
   deviceId?: string | null;
+  deviceSerial?: string | null;
+  location?: string | null;
   latitude?: number | null;
   longitude?: number | null;
-  createdAt?: unknown;
-  updatedAt?: unknown;
+  mileage?: number | null;
+  fuelLevel?: number | null;
+  createdAt?: string | unknown;
+  updatedAt?: string | unknown;
 }

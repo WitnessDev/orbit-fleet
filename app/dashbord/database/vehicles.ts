@@ -5,72 +5,47 @@ import {
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
   orderBy,
   query,
-  serverTimestamp,
   updateDoc,
   where,
 } from "firebase/firestore";
-
 import { db } from "@/lib/firebase";
+import type { Vehicle, VehicleStatus } from "@/lib/types/vehicle";
 
-/* ============================================================
-   VEHICLE TYPES
-============================================================ */
-
-export type VehicleStatus = "online" | "idle" | "offline";
-
-export interface Vehicle {
-  id?: string;
-
-  registrationNumber: string;
-  make: string;
-  model: string;
-  year?: number;
-
-  color?: string;
-  type?: string;
-
-  driverId?: string | null;
-  driverName?: string | null;
-
-  deviceId?: string | null;
-
-  status: VehicleStatus;
-
-  latitude?: number | null;
-  longitude?: number | null;
-
-  mileage?: number;
-  fuelLevel?: number;
-
-  createdAt?: unknown;
-  updatedAt?: unknown;
-}
-
-/* ============================================================
-   COLLECTION
-============================================================ */
+export type { Vehicle, VehicleStatus };
 
 const vehiclesCollection = collection(db, "vehicles");
 
 /* ============================================================
-   ADD VEHICLE
+   ADD VEHICLE (Day 7)
 ============================================================ */
 
 export async function addVehicle(
   vehicle: Omit<Vehicle, "id" | "createdAt" | "updatedAt">
-) {
+): Promise<Vehicle> {
   try {
+    const now = new Date().toISOString();
     const vehicleData = {
-      ...vehicle,
-
-      registrationNumber: vehicle.registrationNumber.trim(),
+      registrationNumber: vehicle.registrationNumber.trim().toUpperCase(),
       make: vehicle.make.trim(),
       model: vehicle.model.trim(),
-
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
+      year: vehicle.year || null,
+      color: vehicle.color?.trim() || "White",
+      type: vehicle.type || "Van/Truck",
+      status: vehicle.status || "offline",
+      driverId: vehicle.driverId || null,
+      driverName: vehicle.driverName || null,
+      deviceId: vehicle.deviceId || null,
+      deviceSerial: vehicle.deviceSerial || null,
+      location: vehicle.location || "Central Garage",
+      latitude: vehicle.latitude || -6.7924,
+      longitude: vehicle.longitude || 39.2083,
+      mileage: vehicle.mileage || 0,
+      fuelLevel: vehicle.fuelLevel || 100,
+      createdAt: now,
+      updatedAt: now,
     };
 
     const docRef = await addDoc(vehiclesCollection, vehicleData);
@@ -91,21 +66,58 @@ export async function addVehicle(
 
 export async function getVehicles(): Promise<Vehicle[]> {
   try {
-    const vehiclesQuery = query(
-      vehiclesCollection,
-      orderBy("createdAt", "desc")
-    );
-
+    const vehiclesQuery = query(vehiclesCollection, orderBy("createdAt", "desc"));
     const snapshot = await getDocs(vehiclesQuery);
 
     return snapshot.docs.map((vehicleDoc) => ({
       id: vehicleDoc.id,
       ...vehicleDoc.data(),
     })) as Vehicle[];
-  } catch (error) {
-    console.error("Failed to get vehicles:", error);
-    throw error;
+  } catch {
+    const snapshot = await getDocs(vehiclesCollection);
+    return snapshot.docs.map((vehicleDoc) => ({
+      id: vehicleDoc.id,
+      ...vehicleDoc.data(),
+    })) as Vehicle[];
   }
+}
+
+/* ============================================================
+   SUBSCRIBE TO VEHICLES (Real-time Day 7)
+============================================================ */
+
+export function subscribeVehicles(
+  onData: (vehicles: Vehicle[]) => void,
+  onError?: (error: Error) => void
+) {
+  const vehiclesQuery = query(vehiclesCollection, orderBy("createdAt", "desc"));
+  return onSnapshot(
+    vehiclesQuery,
+    (snapshot) => {
+      const list = snapshot.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+      })) as Vehicle[];
+      onData(list);
+    },
+    () => {
+      // Fallback query without orderBy
+      const unsubFallback = onSnapshot(
+        vehiclesCollection,
+        (snapshot) => {
+          const list = snapshot.docs.map((d) => ({
+            id: d.id,
+            ...d.data(),
+          })) as Vehicle[];
+          onData(list);
+        },
+        (error) => {
+          if (onError) onError(error);
+        }
+      );
+      return unsubFallback;
+    }
+  );
 }
 
 /* ============================================================
@@ -117,7 +129,6 @@ export async function getVehicle(
 ): Promise<Vehicle | null> {
   try {
     const vehicleRef = doc(db, "vehicles", vehicleId);
-
     const snapshot = await getDoc(vehicleRef);
 
     if (!snapshot.exists()) {
@@ -142,9 +153,7 @@ export async function getVehicleByRegistration(
   registrationNumber: string
 ): Promise<Vehicle | null> {
   try {
-    const normalizedRegistration = registrationNumber
-      .trim()
-      .toUpperCase();
+    const normalizedRegistration = registrationNumber.trim().toUpperCase();
 
     const vehiclesQuery = query(
       vehiclesCollection,
@@ -164,11 +173,7 @@ export async function getVehicleByRegistration(
       ...vehicleDoc.data(),
     } as Vehicle;
   } catch (error) {
-    console.error(
-      "Failed to find vehicle by registration:",
-      error
-    );
-
+    console.error("Failed to find vehicle by registration:", error);
     throw error;
   }
 }
@@ -180,16 +185,14 @@ export async function getVehicleByRegistration(
 export async function updateVehicle(
   vehicleId: string,
   updates: Partial<Omit<Vehicle, "id" | "createdAt">>
-) {
+): Promise<void> {
   try {
     const vehicleRef = doc(db, "vehicles", vehicleId);
 
     await updateDoc(vehicleRef, {
       ...updates,
-      updatedAt: serverTimestamp(),
+      updatedAt: new Date().toISOString(),
     });
-
-    return true;
   } catch (error) {
     console.error("Failed to update vehicle:", error);
     throw error;
@@ -203,16 +206,14 @@ export async function updateVehicle(
 export async function updateVehicleStatus(
   vehicleId: string,
   status: VehicleStatus
-) {
+): Promise<void> {
   try {
     const vehicleRef = doc(db, "vehicles", vehicleId);
 
     await updateDoc(vehicleRef, {
       status,
-      updatedAt: serverTimestamp(),
+      updatedAt: new Date().toISOString(),
     });
-
-    return true;
   } catch (error) {
     console.error("Failed to update vehicle status:", error);
     throw error;
@@ -226,18 +227,18 @@ export async function updateVehicleStatus(
 export async function updateVehicleLocation(
   vehicleId: string,
   latitude: number,
-  longitude: number
-) {
+  longitude: number,
+  locationName?: string
+): Promise<void> {
   try {
     const vehicleRef = doc(db, "vehicles", vehicleId);
 
     await updateDoc(vehicleRef, {
       latitude,
       longitude,
-      updatedAt: serverTimestamp(),
+      ...(locationName ? { location: locationName } : {}),
+      updatedAt: new Date().toISOString(),
     });
-
-    return true;
   } catch (error) {
     console.error("Failed to update vehicle location:", error);
     throw error;
@@ -248,13 +249,10 @@ export async function updateVehicleLocation(
    DELETE VEHICLE
 ============================================================ */
 
-export async function deleteVehicle(vehicleId: string) {
+export async function deleteVehicle(vehicleId: string): Promise<void> {
   try {
     const vehicleRef = doc(db, "vehicles", vehicleId);
-
     await deleteDoc(vehicleRef);
-
-    return true;
   } catch (error) {
     console.error("Failed to delete vehicle:", error);
     throw error;
@@ -274,7 +272,7 @@ export async function getVehicleStats() {
     let offline = 0;
 
     snapshot.forEach((vehicleDoc) => {
-      const vehicle = vehicleDoc.data();
+      const vehicle = vehicleDoc.data() as Partial<Vehicle>;
 
       if (vehicle.status === "online") {
         online++;
@@ -293,6 +291,13 @@ export async function getVehicleStats() {
     };
   } catch (error) {
     console.error("Failed to get vehicle statistics:", error);
-    throw error;
+    return {
+      vehicles: 0,
+      online: 0,
+      idle: 0,
+      offline: 0,
+    };
   }
 }
+
+export const createVehicle = addVehicle;

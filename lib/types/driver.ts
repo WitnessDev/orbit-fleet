@@ -6,12 +6,15 @@ export type DriverStatus =
 
 export interface Driver {
   id: string;
-  firstName: string;
-  lastName: string;
+  name: string;
+  email?: string;
   phone: string;
   licenseNumber: string;
   status: DriverStatus;
   vehicleId?: string | null;
-  createdAt?: unknown;
-  updatedAt?: unknown;
+  vehicleRegistration?: string | null;
+  experienceYears?: number;
+  notes?: string;
+  createdAt?: string | unknown;
+  updatedAt?: string | unknown;
 }
