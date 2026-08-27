@@ -51,6 +51,12 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
       active: pathname.startsWith("/dashbord/drivers"),
     },
     {
+      label: "User Management",
+      icon: ShieldCheck,
+      href: "/dashbord/users",
+      active: pathname.startsWith("/dashbord/users") || pathname.startsWith("/users"),
+    },
+    {
       label: "Devices",
       icon: Activity,
       href: "/dashbord/devices",
