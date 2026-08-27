@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { ArrowLeft, Compass, Lock, Mail, User } from "lucide-react";
 
 import {
   login,
@@ -30,40 +32,27 @@ export default function LoginPage() {
       await login(email, password);
 
       router.replace("/dashbord");
-    } catch (error: any) {
-      console.error("LOGIN ERROR:", error);
+    } catch (error: unknown) {
+      const err = error as { code?: string; message?: string } | undefined;
+      console.error("LOGIN ERROR:", err);
 
-      if (error?.code === "auth/invalid-credential") {
+      if (err?.code === "auth/invalid-credential") {
         alert("Incorrect email or password.");
-      } else if (error?.code === "auth/invalid-email") {
+      } else if (err?.code === "auth/invalid-email") {
         alert("Please enter a valid email address.");
-      } else if (
-        error?.code === "auth/user-not-found"
-      ) {
+      } else if (err?.code === "auth/user-not-found") {
         alert("No account exists with this email.");
-      } else if (
-        error?.code === "auth/wrong-password"
-      ) {
+      } else if (err?.code === "auth/wrong-password") {
         alert("Incorrect password.");
-      } else if (
-        error?.code === "auth/operation-not-allowed"
-      ) {
-        alert(
-          "Email/Password authentication is not enabled in Firebase."
-        );
-      } else if (
-        error?.code === "auth/network-request-failed"
-      ) {
-        alert(
-          "Network error. Check your internet connection."
-        );
+      } else if (err?.code === "auth/operation-not-allowed") {
+        alert("Email/Password authentication is not enabled in Firebase.");
+      } else if (err?.code === "auth/network-request-failed") {
+        alert("Network error. Check your internet connection.");
       } else {
         alert(
           `Login failed.\n\nCode: ${
-            error?.code || "unknown"
-          }\n\nMessage: ${
-            error?.message || "Unknown error"
-          }`
+            err?.code || "unknown"
+          }\n\nMessage: ${err?.message || "Unknown error"}`
         );
       }
     } finally {
@@ -89,10 +78,7 @@ export default function LoginPage() {
     try {
       setLoading(true);
 
-      const userCredential = await signUp(
-        email,
-        password
-      );
+      const userCredential = await signUp(email, password);
 
       const user = userCredential.user;
 
@@ -104,46 +90,29 @@ export default function LoginPage() {
       );
 
       router.replace("/dashbord");
-    } catch (error: any) {
-      console.error("SIGNUP ERROR:", error);
+    } catch (error: unknown) {
+      const err = error as { code?: string; message?: string } | undefined;
+      console.error("SIGNUP ERROR:", err);
 
-      if (
-        error?.code === "auth/email-already-in-use"
-      ) {
+      if (err?.code === "auth/email-already-in-use") {
         alert("This email is already registered.");
-      } else if (
-        error?.code === "auth/invalid-email"
-      ) {
+      } else if (err?.code === "auth/invalid-email") {
         alert("Please enter a valid email address.");
-      } else if (
-        error?.code === "auth/weak-password"
-      ) {
+      } else if (err?.code === "auth/weak-password") {
         alert("Password must be at least 6 characters.");
-      } else if (
-        error?.code === "auth/operation-not-allowed"
-      ) {
-        alert(
-          "Email/Password authentication is not enabled in Firebase."
-        );
-      } else if (
-        error?.code === "permission-denied"
-      ) {
+      } else if (err?.code === "auth/operation-not-allowed") {
+        alert("Email/Password authentication is not enabled in Firebase.");
+      } else if (err?.code === "permission-denied") {
         alert(
           "Firebase Firestore permission denied. Check your Firestore rules."
         );
-      } else if (
-        error?.code === "auth/network-request-failed"
-      ) {
-        alert(
-          "Network error. Check your internet connection."
-        );
+      } else if (err?.code === "auth/network-request-failed") {
+        alert("Network error. Check your internet connection.");
       } else {
         alert(
           `Signup failed.\n\nCode: ${
-            error?.code || "unknown"
-          }\n\nMessage: ${
-            error?.message || "Unknown error"
-          }`
+            err?.code || "unknown"
+          }\n\nMessage: ${err?.message || "Unknown error"}`
         );
       }
     } finally {
@@ -152,190 +121,259 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white p-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-slate-50 p-4 sm:p-6 overflow-hidden">
+      {/* Background Radial Glow matching Home */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_rgba(16,185,129,0.15),_transparent_65%)] pointer-events-none z-0" />
 
-      <div className="relative grid h-[560px] w-full max-w-4xl grid-cols-2 overflow-hidden rounded-3xl bg-[#fdfbf7] shadow-[0_20px_50px_rgba(0,0,0,0.15)]">
+      {/* Grid Pattern Background matching Home */}
+      <div
+        className="absolute inset-0 opacity-35 pointer-events-none z-0"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle, rgba(16,185,129,0.25) 1px, transparent 1px)",
+          backgroundSize: "36px 36px",
+        }}
+      />
+
+      <div className="relative z-10 grid h-[560px] w-full max-w-4xl grid-cols-1 md:grid-cols-2 overflow-hidden rounded-3xl bg-[#fdfbf7] shadow-[0_20px_50px_rgba(16,185,129,0.14)] border border-emerald-100">
+        
+        {/* Mobile Tab Switcher */}
+        <div className="flex md:hidden border-b border-emerald-100 bg-emerald-50/60 p-1">
+          <button
+            type="button"
+            onClick={() => setIsSignUp(false)}
+            className={`flex-1 rounded-xl py-2 text-xs font-semibold transition-all ${
+              !isSignUp
+                ? "bg-emerald-700 text-white shadow-sm"
+                : "text-emerald-900/70 hover:text-emerald-900"
+            }`}
+          >
+            Sign in
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsSignUp(true)}
+            className={`flex-1 rounded-xl py-2 text-xs font-semibold transition-all ${
+              isSignUp
+                ? "bg-emerald-700 text-white shadow-sm"
+                : "text-emerald-900/70 hover:text-emerald-900"
+            }`}
+          >
+            Create account
+          </button>
+        </div>
 
         {/* =====================================================
             LOGIN
         ====================================================== */}
-
         <div
-          className={`flex h-full flex-col justify-center p-10 text-[#12281d] transition-opacity duration-200 ${
-            isSignUp
-              ? "pointer-events-none opacity-0"
-              : "opacity-100"
+          className={`flex h-full flex-col justify-between p-8 sm:p-10 text-slate-900 transition-opacity duration-200 ${
+            isSignUp ? "pointer-events-none opacity-0" : "opacity-100 relative z-10"
           }`}
         >
-          <h2 className="mb-6 text-3xl font-bold">
-            Sign in
-          </h2>
-
-          <form
-            onSubmit={handleLogin}
-            className="space-y-4"
-          >
-            <div>
-              <label className="mb-1 block text-xs text-gray-500">
-                Email
-              </label>
-
-              <input
-                value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
-                }
-                placeholder="Driver or manager email"
-                type="email"
-                required
-                disabled={loading}
-                className="w-full border-b border-gray-300 bg-transparent py-2 text-sm outline-none transition-colors focus:border-[#12281d]"
-              />
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-800 border border-emerald-200 shadow-sm">
+                <Compass className="h-3.5 w-3.5 text-emerald-600" />
+                Orbit <span className="text-emerald-600">Fleet</span>
+              </span>
+              
+              {/* Home Link with special surround pill */}
+              <Link
+                href="/"
+                className="group inline-flex items-center gap-1.5 rounded-full bg-emerald-50/90 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200 shadow-sm transition-all hover:bg-emerald-100 hover:border-emerald-300 hover:shadow"
+              >
+                <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5 text-emerald-600" />
+                <span>Home</span>
+              </Link>
             </div>
 
-            <div>
-              <label className="mb-1 block text-xs text-gray-500">
-                Password
-              </label>
+            <h2 className="mb-1 text-3xl font-black tracking-tight text-slate-900">
+              Sign in
+            </h2>
+            <p className="mb-5 text-xs font-medium text-slate-500">
+              Access your fleet management console
+            </p>
 
-              <input
-                value={password}
-                onChange={(e) =>
-                  setPassword(e.target.value)
-                }
-                placeholder="Password"
-                type="password"
-                required
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="mb-1 block text-xs font-bold text-slate-700">
+                  Email
+                </label>
+                <div className="relative flex items-center">
+                  <Mail className="absolute left-0 top-2.5 h-4 w-4 text-emerald-600/70" />
+                  <input
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Driver or manager email"
+                    type="email"
+                    required
+                    disabled={loading}
+                    className="w-full border-b border-emerald-200 bg-transparent py-2 pl-6 text-sm text-slate-900 outline-none transition-colors focus:border-emerald-600"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-bold text-slate-700">
+                  Password
+                </label>
+                <div className="relative flex items-center">
+                  <Lock className="absolute left-0 top-2.5 h-4 w-4 text-emerald-600/70" />
+                  <input
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Password"
+                    type="password"
+                    required
+                    disabled={loading}
+                    className="w-full border-b border-emerald-200 bg-transparent py-2 pl-6 text-sm text-slate-900 outline-none transition-colors focus:border-emerald-600"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
                 disabled={loading}
-                className="w-full border-b border-gray-300 bg-transparent py-2 text-sm outline-none transition-colors focus:border-[#12281d]"
-              />
+                className="mt-6 w-full rounded-full bg-emerald-700 py-3 font-bold text-sm tracking-wide text-white shadow-md shadow-emerald-700/25 transition-all hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-600/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+              >
+                {loading ? "Signing in..." : "Sign in"}
+              </button>
+            </form>
+          </div>
+
+          {/* Switch Link with special surround badge */}
+          <div className="mt-4 flex items-center justify-center">
+            <div className="inline-flex items-center gap-2 rounded-2xl bg-emerald-50/80 px-4 py-2 border border-emerald-200/90 shadow-sm text-xs text-slate-600">
+              <span>New to Orbit Fleet?</span>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={() => setIsSignUp(true)}
+                className="inline-flex items-center rounded-full bg-emerald-700 px-3 py-1 font-bold text-white shadow-sm hover:bg-emerald-600 transition-all cursor-pointer"
+              >
+                Create an account
+              </button>
             </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="mt-6 w-full rounded-full bg-[#0e3022] py-3 font-medium text-white shadow-md transition-all hover:bg-[#071d15] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading
-                ? "Signing in..."
-                : "Sign in"}
-            </button>
-          </form>
-
-          <p className="mt-6 text-xs text-gray-600">
-            New to Orbit Fleet?{" "}
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => setIsSignUp(true)}
-              className="font-bold text-[#0e3022] underline"
-            >
-              Create an account
-            </button>
-          </p>
+          </div>
         </div>
 
         {/* =====================================================
             SIGN UP
         ====================================================== */}
-
         <div
-          className={`flex h-full flex-col justify-center p-10 text-[#12281d] transition-opacity duration-200 ${
-            !isSignUp
-              ? "pointer-events-none opacity-0"
-              : "opacity-100"
+          className={`flex h-full flex-col justify-between p-8 sm:p-10 text-slate-900 transition-opacity duration-200 ${
+            !isSignUp ? "pointer-events-none opacity-0" : "opacity-100 relative z-10"
           }`}
         >
-          <h2 className="mb-6 text-3xl font-bold">
-            Create account
-          </h2>
-
-          <form
-            onSubmit={handleSignUp}
-            className="space-y-4"
-          >
-            <div>
-              <label className="mb-1 block text-xs text-gray-500">
-                Full name
-              </label>
-
-              <input
-                value={fullName}
-                onChange={(e) =>
-                  setFullName(e.target.value)
-                }
-                placeholder="Full name"
-                type="text"
-                required
-                disabled={loading}
-                className="w-full border-b border-gray-300 bg-transparent py-2 text-sm outline-none transition-colors focus:border-[#12281d]"
-              />
+          <div>
+            <div className="mb-4 flex items-center justify-between">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold uppercase tracking-wider text-emerald-800 border border-emerald-200 shadow-sm">
+                <Compass className="h-3.5 w-3.5 text-emerald-600" />
+                Orbit <span className="text-emerald-600">Registration</span>
+              </span>
+              
+              {/* Home Link with special surround pill */}
+              <Link
+                href="/"
+                className="group inline-flex items-center gap-1.5 rounded-full bg-emerald-50/90 px-3 py-1 text-xs font-bold text-emerald-800 border border-emerald-200 shadow-sm transition-all hover:bg-emerald-100 hover:border-emerald-300 hover:shadow"
+              >
+                <ArrowLeft className="h-3.5 w-3.5 transition-transform group-hover:-translate-x-0.5 text-emerald-600" />
+                <span>Home</span>
+              </Link>
             </div>
 
-            <div>
-              <label className="mb-1 block text-xs text-gray-500">
-                Email address
-              </label>
+            <h2 className="mb-1 text-3xl font-black tracking-tight text-slate-900">
+              Create account
+            </h2>
+            <p className="mb-4 text-xs font-medium text-slate-500">
+              Register your driver profile in the network
+            </p>
 
-              <input
-                value={email}
-                onChange={(e) =>
-                  setEmail(e.target.value)
-                }
-                placeholder="Email address"
-                type="email"
-                required
+            <form onSubmit={handleSignUp} className="space-y-3.5">
+              <div>
+                <label className="mb-1 block text-xs font-bold text-slate-700">
+                  Full name
+                </label>
+                <div className="relative flex items-center">
+                  <User className="absolute left-0 top-2.5 h-4 w-4 text-emerald-600/70" />
+                  <input
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Full name"
+                    type="text"
+                    required
+                    disabled={loading}
+                    className="w-full border-b border-emerald-200 bg-transparent py-1.5 pl-6 text-sm text-slate-900 outline-none transition-colors focus:border-emerald-600"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-bold text-slate-700">
+                  Email address
+                </label>
+                <div className="relative flex items-center">
+                  <Mail className="absolute left-0 top-2.5 h-4 w-4 text-emerald-600/70" />
+                  <input
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Email address"
+                    type="email"
+                    required
+                    disabled={loading}
+                    className="w-full border-b border-emerald-200 bg-transparent py-1.5 pl-6 text-sm text-slate-900 outline-none transition-colors focus:border-emerald-600"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-1 block text-xs font-bold text-slate-700">
+                  Password
+                </label>
+                <div className="relative flex items-center">
+                  <Lock className="absolute left-0 top-2.5 h-4 w-4 text-emerald-600/70" />
+                  <input
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Minimum 6 characters"
+                    type="password"
+                    required
+                    disabled={loading}
+                    className="w-full border-b border-emerald-200 bg-transparent py-1.5 pl-6 text-sm text-slate-900 outline-none transition-colors focus:border-emerald-600"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
                 disabled={loading}
-                className="w-full border-b border-gray-300 bg-transparent py-2 text-sm outline-none transition-colors focus:border-[#12281d]"
-              />
-            </div>
+                className="mt-4 w-full rounded-full bg-emerald-700 py-3 font-bold text-sm tracking-wide text-white shadow-md shadow-emerald-700/25 transition-all hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-600/30 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+              >
+                {loading ? "Creating account..." : "Create account"}
+              </button>
+            </form>
+          </div>
 
-            <div>
-              <label className="mb-1 block text-xs text-gray-500">
-                Password
-              </label>
-
-              <input
-                value={password}
-                onChange={(e) =>
-                  setPassword(e.target.value)
-                }
-                placeholder="Minimum 6 characters"
-                type="password"
-                required
+          {/* Switch Link with special surround badge */}
+          <div className="mt-4 flex items-center justify-center">
+            <div className="inline-flex items-center gap-2 rounded-2xl bg-emerald-50/80 px-4 py-2 border border-emerald-200/90 shadow-sm text-xs text-slate-600">
+              <span>Already registered?</span>
+              <button
+                type="button"
                 disabled={loading}
-                className="w-full border-b border-gray-300 bg-transparent py-2 text-sm outline-none transition-colors focus:border-[#12281d]"
-              />
+                onClick={() => setIsSignUp(false)}
+                className="inline-flex items-center rounded-full bg-emerald-700 px-3 py-1 font-bold text-white shadow-sm hover:bg-emerald-600 transition-all cursor-pointer"
+              >
+                Sign in
+              </button>
             </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="mt-4 w-full rounded-full bg-[#0e3022] py-3 font-medium text-white shadow-md transition-all hover:bg-[#071d15] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading
-                ? "Creating account..."
-                : "Create account"}
-            </button>
-          </form>
-
-          <p className="mt-6 text-xs text-gray-600">
-            Already registered?{" "}
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => setIsSignUp(false)}
-              className="font-bold text-[#0e3022] underline"
-            >
-              Sign in
-            </button>
-          </p>
+          </div>
         </div>
 
         {/* =====================================================
-            ANIMATED BLADE
+            ANIMATED BLADE (Home matching emerald gradient)
         ====================================================== */}
-
         <motion.div
           initial={false}
           animate={{
@@ -347,10 +385,10 @@ export default function LoginPage() {
             damping: 25,
             mass: 0.8,
           }}
-          className={`absolute left-0 top-0 z-20 flex h-full w-[55%] flex-col justify-center p-10 shadow-2xl ${
+          className={`hidden md:flex absolute left-0 top-0 z-20 h-full w-[55%] flex-col justify-center p-10 shadow-2xl ${
             isSignUp
-              ? "bg-gradient-to-r from-[#051a11] via-[#0c3626] to-[#fdfbf7]"
-              : "bg-gradient-to-l from-[#051a11] via-[#0c3626] to-[#fdfbf7]"
+              ? "bg-gradient-to-br from-[#064e3b] via-[#047857] to-[#022c22]"
+              : "bg-gradient-to-bl from-[#064e3b] via-[#047857] to-[#022c22]"
           }`}
           style={{
             clipPath: isSignUp
@@ -359,11 +397,7 @@ export default function LoginPage() {
           }}
         >
           <motion.div
-            key={
-              isSignUp
-                ? "signup-desc"
-                : "login-desc"
-            }
+            key={isSignUp ? "signup-desc" : "login-desc"}
             initial={{
               opacity: 0,
               scale: 0.95,
@@ -378,37 +412,28 @@ export default function LoginPage() {
               delay: 0.1,
               duration: 0.2,
             }}
-            className={
-              isSignUp
-                ? "pr-8 text-left"
-                : "pl-10 text-left"
-            }
+            className={isSignUp ? "pr-8 text-left" : "pl-10 text-left"}
           >
-            <span className="text-[10px] font-semibold uppercase tracking-widest text-[#d4af37]">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-300 border border-emerald-300/30">
+              <Compass className="h-3 w-3 text-emerald-300" />
               ORBIT FLEET MANAGEMENT
             </span>
 
-            <h3 className="mt-2 mb-3 font-serif text-3xl leading-tight text-white">
+            <h3 className="mt-3 mb-3 text-3xl font-black leading-tight text-white">
               {isSignUp ? (
                 <>
-                  Join the{" "}
-                  <br />
-                  <em className="font-normal italic text-[#e0cfb3]">
-                    network.
-                  </em>
+                  Join the <br />
+                  <em className="font-normal italic text-emerald-200">network.</em>
                 </>
               ) : (
                 <>
-                  Welcome{" "}
-                  <br />
-                  <em className="font-normal italic text-[#e0cfb3]">
-                    back.
-                  </em>
+                  Welcome <br />
+                  <em className="font-normal italic text-emerald-200">back.</em>
                 </>
               )}
             </h3>
 
-            <p className="max-w-xs text-xs leading-relaxed text-gray-200 opacity-90">
+            <p className="max-w-xs text-xs leading-relaxed text-emerald-100/90">
               {isSignUp
                 ? "Register your driver profile to access active assignments, live trip tracking, and route details."
                 : "Sign in to monitor active routes, track fleet analytics, and stay connected with your dispatch team."}
