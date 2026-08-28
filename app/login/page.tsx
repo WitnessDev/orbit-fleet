@@ -135,7 +135,7 @@ export default function LoginPage() {
         }}
       />
 
-      <div className="relative z-10 grid h-[560px] w-full max-w-4xl grid-cols-1 md:grid-cols-2 overflow-hidden rounded-3xl bg-[#fdfbf7] shadow-[0_20px_50px_rgba(16,185,129,0.14)] border border-emerald-100">
+      <div className="relative z-10 grid min-h-[560px] h-auto w-full max-w-4xl grid-cols-1 md:h-[560px] md:grid-cols-2 overflow-hidden rounded-3xl bg-[#fdfbf7] shadow-[0_20px_50px_rgba(16,185,129,0.14)] border border-emerald-100">
         
         {/* Mobile Tab Switcher */}
         <div className="flex md:hidden border-b border-emerald-100 bg-emerald-50/60 p-1">
@@ -166,9 +166,16 @@ export default function LoginPage() {
         {/* =====================================================
             LOGIN
         ====================================================== */}
-        <div
-          className={`flex h-full flex-col justify-between p-8 sm:p-10 text-slate-900 transition-opacity duration-200 ${
-            isSignUp ? "pointer-events-none opacity-0" : "opacity-100 relative z-10"
+        <motion.div
+          animate={{
+            opacity: isSignUp ? 0 : 1,
+            x: isSignUp ? -18 : 0,
+          }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className={`flex min-h-[500px] flex-col justify-between p-8 sm:p-10 text-slate-900 md:col-start-1 md:h-full md:min-h-0 ${
+            isSignUp
+              ? "pointer-events-none absolute inset-y-0 left-0 w-1/2 z-0"
+              : "relative z-10"
           }`}
         >
           <div>
@@ -256,14 +263,21 @@ export default function LoginPage() {
               </button>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* =====================================================
             SIGN UP
         ====================================================== */}
-        <div
-          className={`flex h-full flex-col justify-between p-8 sm:p-10 text-slate-900 transition-opacity duration-200 ${
-            !isSignUp ? "pointer-events-none opacity-0" : "opacity-100 relative z-10"
+        <motion.div
+          animate={{
+            opacity: isSignUp ? 1 : 0,
+            x: isSignUp ? 0 : 18,
+          }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          className={`flex min-h-[500px] flex-col justify-between p-8 sm:p-10 text-slate-900 md:col-start-2 md:h-full md:min-h-0 ${
+            !isSignUp
+              ? "pointer-events-none absolute inset-y-0 right-0 w-1/2 z-0"
+              : "relative z-10"
           }`}
         >
           <div>
@@ -369,7 +383,7 @@ export default function LoginPage() {
               </button>
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* =====================================================
             ANIMATED BLADE (Home matching emerald gradient)
@@ -377,7 +391,10 @@ export default function LoginPage() {
         <motion.div
           initial={false}
           animate={{
-            x: isSignUp ? "0%" : "85%",
+            x: isSignUp ? "0%" : "100%",
+            clipPath: isSignUp
+              ? "polygon(0 0, 100% 0, 82% 100%, 0 100%)"
+              : "polygon(18% 0, 100% 0, 100% 100%, 0 100%)",
           }}
           transition={{
             type: "spring",
@@ -390,11 +407,6 @@ export default function LoginPage() {
               ? "bg-gradient-to-br from-[#064e3b] via-[#047857] to-[#022c22]"
               : "bg-gradient-to-bl from-[#064e3b] via-[#047857] to-[#022c22]"
           }`}
-          style={{
-            clipPath: isSignUp
-              ? "polygon(0 0, 100% 0, 82% 100%, 0 100%)"
-              : "polygon(18% 0, 100% 0, 100% 100%, 0 100%)",
-          }}
         >
           <motion.div
             key={isSignUp ? "signup-desc" : "login-desc"}
