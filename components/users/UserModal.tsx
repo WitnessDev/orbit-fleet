@@ -19,6 +19,7 @@ import type {
 } from "@/types/user";
 import RoleSelect from "./RoleSelect";
 import type { UserFormData, ValidationErrors } from "@/lib/users/userValidation";
+import { useCurrentRole } from "@/lib/auth/useCurrentRole";
 
 interface UserModalProps {
   isOpen: boolean;
@@ -37,6 +38,18 @@ function UserModalForm({
   roles,
 }: Omit<UserModalProps, "isOpen">) {
   const isEditing = Boolean(userToEdit);
+  const { user: currentAuthUser, role: currentUserRole } = useCurrentRole();
+
+  // Safeguards
+  const isEditingSelf = Boolean(
+    isEditing &&
+      ((userToEdit?.id && userToEdit.id === currentAuthUser?.uid) ||
+        (userToEdit?.email && userToEdit.email === currentAuthUser?.email))
+  );
+  const isOwnerEditingProtected = Boolean(
+    isEditing && userToEdit?.role === "owner" && currentUserRole !== "owner"
+  );
+  const isRoleDisabled = isEditingSelf || isOwnerEditingProtected;
 
   // Form states initialized directly from props
   const [name, setName] = useState(userToEdit?.name || "");
@@ -260,7 +273,18 @@ function UserModalForm({
                 value={role}
                 onChange={(newRole) => setRole(newRole)}
                 roles={roles}
+                disabled={isRoleDisabled}
               />
+              {isEditingSelf && (
+                <p className="mt-1 text-[11px] text-amber-600">
+                  You cannot modify your own assigned role.
+                </p>
+              )}
+              {isOwnerEditingProtected && !isEditingSelf && (
+                <p className="mt-1 text-[11px] text-amber-600">
+                  Only an account Owner can modify another Owner&apos;s role.
+                </p>
+              )}
             </div>
 
             <div>

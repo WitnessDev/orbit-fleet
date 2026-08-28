@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function: check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function: get user document data
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    // Helper function: is the user an Owner?
+    function isOwner() {
+      return isAuthenticated() && getUserData().role == 'owner';
+    }
+    
+    // Helper function: is the user an Admin or Owner?
+    function isAdminOrOwner() {
+      return isAuthenticated() && (getUserData().role == 'owner' || getUserData().role == 'admin');
+    }
+    
+    // Helper function: is the user operational staff (owner, admin, fleet_manager, dispatcher)?
+    function isStaff() {
+      return isAuthenticated() && (getUserData().role in ['owner', 'admin', 'fleet_manager', 'dispatcher']);
+    }
+
+    // ===============================================================
+    // USERS COLLECTION
+    // ===============================================================
+    match /users/{userId} {
+      // Any authenticated user can read profiles (needed for driver & team lookups)
+      allow read: if isAuthenticated();
+      
+      // User can create their own initial profile during registration (must not be owner/admin by default)
+      allow create: if isAuthenticated() && (
+        (request.auth.uid == userId && (request.resource.data.role == 'driver' || !('role' in request.resource.data)))
+        || isAdminOrOwner()
+      );
+      
+      // Update rules:
+      // 1. Regular users can update their own profile fields (name, phone, department), BUT CANNOT touch 'role'
+      // 2. Admins can update non-owner roles.
+      // 3. Only Owners can promote/demote other owners.
+      allow update: if isAuthenticated() && (
+        (request.auth.uid == userId && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])))
+        || (isAdminOrOwner() && resource.data.role != 'owner')
+        || isOwner()
+      );
+      
+      // Delete rules: Only Owner can delete any user; Admin can delete non-owners.
+      allow delete: if isAuthenticated() && (
+        isOwner() || (isAdminOrOwner() && resource.data.role != 'owner')
+      );
+    }
+
+    // ===============================================================
+    // VEHICLES COLLECTION
+    // ===============================================================
+    match /vehicles/{vehicleId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isStaff();
+    }
+
+    // ===============================================================
+    // DRIVERS COLLECTION
+    // ===============================================================
+    match /drivers/{driverId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isStaff();
+    }
+
+    // ===============================================================
+    // GPS DEVICES COLLECTION
+    // ===============================================================
+    match /devices/{deviceId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isStaff();
+    }
+
+    // ===============================================================
+    // TELEMETRY & TRIPS COLLECTION
+    // ===============================================================
+    match /telemetry/{telemetryId} {
+      allow read, write: if isAuthenticated();
+    }
+    
+    match /trips/{tripId} {
+      allow read, write: if isAuthenticated();
+    }
+  }
+}

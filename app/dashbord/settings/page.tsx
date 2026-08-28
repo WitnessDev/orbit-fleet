@@ -21,6 +21,7 @@ import {
   type UserRole,
 } from "@/app/dashbord/database";
 import { OFFICIAL_ROLES } from "@/lib/auth/permissions";
+import { useCurrentRole } from "@/lib/auth/useCurrentRole";
 
 const ROLE_OPTIONS: { role: UserRole; label: string }[] = [
   { role: "owner", label: "Owner" },
@@ -31,6 +32,7 @@ const ROLE_OPTIONS: { role: UserRole; label: string }[] = [
 ];
 
 export default function SettingsPage() {
+  const { user: currentAuthUser, role: currentUserRole } = useCurrentRole();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -249,7 +251,15 @@ export default function SettingsPage() {
                         </span>
                       </td>
                       <td className="p-3.5 text-right">
-                        {isSelected ? (
+                        {u.uid === currentAuthUser?.uid || u.email === currentAuthUser?.email ? (
+                          <span className="text-[11px] font-semibold text-slate-400 italic">
+                            Current Account
+                          </span>
+                        ) : u.role === "owner" && currentUserRole !== "owner" ? (
+                          <span className="text-[11px] font-semibold text-slate-400 italic">
+                            Owner Protected
+                          </span>
+                        ) : isSelected ? (
                           <div className="flex items-center justify-end gap-2">
                             <select
                               value={newRole}

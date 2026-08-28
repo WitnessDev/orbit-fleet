@@ -16,10 +16,10 @@ import {
   Radio,
   Car,
   X,
+  User,
 } from "lucide-react";
 import { logout } from "@/app/dashbord/database";
 import { useCurrentRole } from "@/lib/auth/useCurrentRole";
-import { OFFICIAL_ROLES, type UserRole } from "@/lib/auth/permissions";
 
 interface SidebarProps {
   onCloseMobile?: () => void;
@@ -28,7 +28,7 @@ interface SidebarProps {
 export default function Sidebar({ onCloseMobile }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { role, roleConfig, setRole, canAccess } = useCurrentRole();
+  const { user, profile, role, roleConfig, canAccess } = useCurrentRole();
 
   const handleLogout = async () => {
     try {
@@ -39,7 +39,14 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
     }
   };
 
-  // Dynamic Navigation Items based on Role Permissions
+  // Determine user display name and email from Firestore profile / Auth
+  const displayName =
+    profile?.name ||
+    user?.displayName ||
+    (user?.email ? user.email.split("@")[0].replace(/[._-]/g, " ") : "Authenticated User");
+  const displayEmail = profile?.email || user?.email || "";
+
+  // Dynamic Navigation Items strictly governed by Firestore Role Permissions
   const allNavItems = [
     {
       label: role === "driver" ? "My Dashboard" : "Dashboard",
@@ -107,7 +114,7 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
       case "driver":
         return <Car className="h-4 w-4 text-slate-700" />;
       default:
-        return <Shield className="h-4 w-4 text-emerald-700" />;
+        return <User className="h-4 w-4 text-slate-700" />;
     }
   };
 
@@ -138,7 +145,7 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
           <button
             type="button"
             onClick={onCloseMobile}
-            className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 lg:hidden"
+            className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 lg:hidden cursor-pointer"
             aria-label="Close sidebar"
           >
             <X className="h-5 w-5" />
@@ -150,11 +157,8 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
       <div className="flex-1 overflow-y-auto px-4 py-6">
         <div className="flex items-center justify-between mb-3 px-3">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">
-            Workspace
+            Workspace Navigation
           </p>
-          <span className="text-[9px] font-mono font-bold uppercase px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
-            {roleConfig.label}
-          </span>
         </div>
 
         <nav className="space-y-1">
@@ -185,49 +189,41 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
         </nav>
       </div>
 
-      {/* Role Switcher & Account Footer */}
+      {/* Authenticated User Profile Footer (Display Only - No Role Switcher) */}
       <div className="border-t border-border p-4 bg-slate-50/50 space-y-3">
-        {/* Role Identity Card with Quick Role Selector */}
+        {/* User Identity Card - Display Only */}
         <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-2xs">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-slate-100">
-                {getRoleIcon(role)}
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-slate-900 truncate">
-                  Role: {roleConfig.label}
+          <div className="flex items-start gap-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 border border-slate-200 text-slate-700">
+              {getRoleIcon(role)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-slate-900 truncate capitalize">
+                {displayName}
+              </p>
+              {displayEmail && (
+                <p className="text-[11px] font-mono text-slate-400 truncate">
+                  {displayEmail}
                 </p>
+              )}
+              {/* Display-only official role badge */}
+              <div className="mt-1.5 flex items-center">
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold border ${roleConfig.badgeStyles.bg} ${roleConfig.badgeStyles.border}`}
+                >
+                  <span className={`h-1.5 w-1.5 rounded-full ${roleConfig.badgeStyles.dot}`} />
+                  {roleConfig.label}
+                </span>
               </div>
             </div>
-            <span
-              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase border ${roleConfig.badgeStyles.bg} ${roleConfig.badgeStyles.border}`}
-            >
-              <span className={`h-1.5 w-1.5 rounded-full ${roleConfig.badgeStyles.dot}`} />
-              {role}
-            </span>
           </div>
-
-          <label className="block text-[10px] text-slate-400 font-semibold mb-1">
-            Simulate Role View:
-          </label>
-          <select
-            value={role}
-            onChange={(e) => setRole(e.target.value as UserRole)}
-            className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] font-semibold text-slate-700 focus:border-primary focus:outline-none"
-          >
-            {Object.values(OFFICIAL_ROLES).map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.label} ({r.shortDescription})
-              </option>
-            ))}
-          </select>
         </div>
 
+        {/* Sign Out Action */}
         <button
           type="button"
           onClick={handleLogout}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-50 hover:border-rose-200"
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white py-2.5 text-xs font-bold text-rose-600 transition hover:bg-rose-50 hover:border-rose-200 cursor-pointer"
         >
           <LogOut className="h-4 w-4" />
           <span>Sign Out</span>
