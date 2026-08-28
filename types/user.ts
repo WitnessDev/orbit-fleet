@@ -1,10 +1,9 @@
 export type UserRole =
-  | "admin"
   | "owner"
+  | "admin"
   | "fleet_manager"
-  | "driver"
-  | "viewer"
-  | (string & {});
+  | "dispatcher"
+  | "driver";
 
 export type UserStatus = "active" | "inactive" | "pending" | "suspended";
 
@@ -41,12 +40,12 @@ export interface RolePermission {
 }
 
 export interface RoleDefinition {
-  id: string;
+  id: UserRole;
   name: string;
   label: string;
   description: string;
   isCustom?: boolean;
-  colorVariant?: "emerald" | "blue" | "purple" | "slate" | "amber";
+  colorVariant?: "emerald" | "purple" | "blue" | "teal" | "slate";
   permissions: string[];
 }
 

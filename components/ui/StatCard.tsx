@@ -26,34 +26,39 @@ export default function StatCard({
 }: StatCardProps) {
   const statusStyles = {
     primary: {
-      dot: "bg-emerald-500",
-      iconBg: "bg-emerald-50 text-emerald-700 border-emerald-100",
-      valueColor: "text-text-primary",
-      highlight: "group-hover:border-emerald-200",
+      dot: "bg-emerald-500 ring-emerald-100",
+      iconBg: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
+      valueColor: "text-slate-900",
+      accentBorder: "group-hover:border-emerald-300",
+      pillBg: "bg-emerald-50 text-emerald-800 border-emerald-200",
     },
     success: {
-      dot: "bg-emerald-500",
-      iconBg: "bg-emerald-50 text-emerald-700 border-emerald-100",
+      dot: "bg-emerald-500 ring-emerald-100",
+      iconBg: "bg-emerald-50 text-emerald-700 border-emerald-200/80",
       valueColor: "text-emerald-700",
-      highlight: "group-hover:border-emerald-200",
+      accentBorder: "group-hover:border-emerald-300",
+      pillBg: "bg-emerald-50 text-emerald-800 border-emerald-200",
     },
     warning: {
-      dot: "bg-amber-500",
-      iconBg: "bg-amber-50 text-amber-700 border-amber-100",
-      valueColor: "text-amber-700",
-      highlight: "group-hover:border-amber-200",
+      dot: "bg-amber-500 ring-amber-100",
+      iconBg: "bg-amber-50 text-amber-700 border-amber-200/80",
+      valueColor: "text-slate-900",
+      accentBorder: "group-hover:border-amber-300",
+      pillBg: "bg-amber-50 text-amber-800 border-amber-200",
     },
     danger: {
-      dot: "bg-rose-500",
-      iconBg: "bg-rose-50 text-rose-700 border-rose-100",
-      valueColor: "text-rose-700",
-      highlight: "group-hover:border-rose-200",
+      dot: "bg-rose-500 ring-rose-100",
+      iconBg: "bg-rose-50 text-rose-700 border-rose-200/80",
+      valueColor: "text-slate-900",
+      accentBorder: "group-hover:border-rose-300",
+      pillBg: "bg-rose-50 text-rose-800 border-rose-200",
     },
     info: {
-      dot: "bg-sky-500",
-      iconBg: "bg-sky-50 text-sky-700 border-sky-100",
-      valueColor: "text-sky-700",
-      highlight: "group-hover:border-sky-200",
+      dot: "bg-sky-500 ring-sky-100",
+      iconBg: "bg-sky-50 text-sky-700 border-sky-200/80",
+      valueColor: "text-slate-900",
+      accentBorder: "group-hover:border-sky-300",
+      pillBg: "bg-sky-50 text-sky-800 border-sky-200",
     },
   };
 
@@ -69,52 +74,58 @@ export default function StatCard({
   return (
     <div
       tabIndex={0}
-      className={`group relative flex flex-col justify-between rounded-[20px] border border-border bg-surface p-5 sm:p-6 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 ${currentTheme.highlight} ${className}`}
+      className={`group relative flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-5 sm:p-6 shadow-xs transition-all duration-200 hover:-translate-y-1 hover:shadow-md active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30 min-h-[140px] ${currentTheme.accentBorder} ${className}`}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
+      {/* Top row: Label + Icon + Status pulse dot */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           {icon && (
             <div
-              className={`flex h-11 w-11 items-center justify-center rounded-xl border transition-colors group-hover:scale-105 ${currentTheme.iconBg}`}
+              className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-all duration-200 group-hover:scale-105 ${currentTheme.iconBg}`}
             >
               {renderIcon()}
             </div>
           )}
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
-              {label}
-            </p>
-          </div>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate">
+            {label}
+          </p>
         </div>
 
-        <span
-          className={`h-2 w-2 rounded-full ring-4 ring-white transition-transform duration-300 group-hover:scale-125 ${currentTheme.dot}`}
-        />
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span
+            className={`h-2.5 w-2.5 rounded-full ring-4 transition-transform duration-300 group-hover:scale-110 ${currentTheme.dot}`}
+          />
+        </div>
       </div>
 
+      {/* Main Metric Value */}
       <div className="mt-4">
-        <p
-          className={`font-display text-3xl sm:text-4xl font-extrabold tracking-tight transition-colors ${currentTheme.valueColor}`}
-        >
-          {value}
-        </p>
+        <div className="flex items-baseline justify-between gap-2">
+          <p
+            className={`font-display text-3xl sm:text-4xl font-extrabold tracking-tight transition-colors ${currentTheme.valueColor}`}
+          >
+            {value}
+          </p>
 
-        {(detail || trend) && (
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-text-muted">
-            {trend && (
-              <span
-                className={`inline-flex items-center font-bold font-mono px-1.5 py-0.5 rounded-md ${
-                  trend.isPositive
-                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                    : "bg-rose-50 text-rose-700 border border-rose-200"
-                }`}
-              >
-                {trend.isPositive ? "↑" : "↓"} {trend.value}
-              </span>
-            )}
-            {trend?.label && <span>{trend.label}</span>}
-            {detail && !trend && <span>{detail}</span>}
-          </div>
+          {trend && (
+            <span
+              className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-bold font-mono border shrink-0 ${
+                trend.isPositive
+                  ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                  : "bg-rose-50 text-rose-800 border-rose-200"
+              }`}
+            >
+              <span>{trend.isPositive ? "↗" : "↘"}</span>
+              <span>{trend.value}</span>
+            </span>
+          )}
+        </div>
+
+        {/* Secondary Detail Text */}
+        {(detail || trend?.label) && (
+          <p className="mt-1.5 text-xs text-slate-500 line-clamp-1">
+            {trend?.label ? trend.label : detail}
+          </p>
         )}
       </div>
     </div>

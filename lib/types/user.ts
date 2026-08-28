@@ -1,4 +1,9 @@
-export type UserRole = "super_admin" | "manager" | "driver";
+export type UserRole =
+  | "owner"
+  | "admin"
+  | "fleet_manager"
+  | "dispatcher"
+  | "driver";
 
 export interface UserProfile {
   uid: string;

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, ShieldCheck, Plus, Lock } from "lucide-react";
-import type { RoleDefinition } from "@/types/user";
+import type { RoleDefinition, UserRole } from "@/types/user";
 import { SYSTEM_PERMISSIONS } from "@/lib/users/userService";
 
 interface RoleModalProps {
@@ -73,8 +73,8 @@ function RoleModalForm({
         : selectedRole?.id || roleName.toLowerCase().replace(/[^a-z0-9]/g, "_");
 
       const roleToSave: RoleDefinition = {
-        id: roleId,
-        name: roleId,
+        id: roleId as UserRole,
+        name: roleId as UserRole,
         label: roleName.trim(),
         description: roleDescription.trim() || `${roleName.trim()} role permissions`,
         isCustom: isCreatingNew ? true : selectedRole?.isCustom,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { ChevronDown, Check, Shield, ShieldCheck, UserCheck, Car, Eye } from "lucide-react";
+import { ChevronDown, Check, Shield, ShieldCheck, UserCheck, Car, Radio } from "lucide-react";
 import type { UserRole, RoleDefinition } from "@/types/user";
 
 interface RoleSelectProps {
@@ -15,29 +15,29 @@ interface RoleSelectProps {
 
 const DEFAULT_ROLE_OPTIONS = [
   {
-    role: "admin" as UserRole,
-    label: "Admin",
-    description: "Full access to all system features, users, and billing.",
-  },
-  {
     role: "owner" as UserRole,
     label: "Owner",
-    description: "Executive control over all company fleet assets and telemetry.",
+    description: "Full account & fleet control with executive oversight.",
+  },
+  {
+    role: "admin" as UserRole,
+    label: "Admin",
+    description: "System administration & user management across all assets.",
   },
   {
     role: "fleet_manager" as UserRole,
     label: "Fleet Manager",
-    description: "Manage vehicles, assign drivers, and monitor dispatch routes.",
+    description: "Fleet operations & driver assignments across regional fleets.",
+  },
+  {
+    role: "dispatcher" as UserRole,
+    label: "Dispatcher / Operations",
+    description: "Daily fleet operations, schedule monitoring, and live dispatch.",
   },
   {
     role: "driver" as UserRole,
     label: "Driver",
-    description: "Assigned vehicle trips, navigation, and live route status.",
-  },
-  {
-    role: "viewer" as UserRole,
-    label: "Viewer",
-    description: "Read-only access to view active fleet tracking and reports.",
+    description: "Assigned vehicle & trip access with live route navigation.",
   },
 ];
 
@@ -64,32 +64,34 @@ export default function RoleSelect({
   }, []);
 
   // Format label and info for current selection
-  const currentRole = roles?.find((r) => r.id === value) ||
+  const currentRole =
+    roles?.find((r) => r.id === value) ||
     DEFAULT_ROLE_OPTIONS.find((r) => r.role === value) || {
       label: value ? value.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()) : "Select Role",
-      description: "Custom role permissions",
+      description: "Role permissions",
     };
 
-  const roleList = roles && roles.length > 0
-    ? roles.map((r) => ({
-        role: r.id as UserRole,
-        label: r.label,
-        description: r.description,
-      }))
-    : DEFAULT_ROLE_OPTIONS;
+  const roleList =
+    roles && roles.length > 0
+      ? roles.map((r) => ({
+          role: r.id as UserRole,
+          label: r.label,
+          description: r.description,
+        }))
+      : DEFAULT_ROLE_OPTIONS;
 
   const renderIcon = (roleId: string, classNameStr: string) => {
     switch (roleId) {
-      case "admin":
-        return <ShieldCheck className={classNameStr} />;
       case "owner":
         return <Shield className={classNameStr} />;
+      case "admin":
+        return <ShieldCheck className={classNameStr} />;
       case "fleet_manager":
         return <UserCheck className={classNameStr} />;
+      case "dispatcher":
+        return <Radio className={classNameStr} />;
       case "driver":
         return <Car className={classNameStr} />;
-      case "viewer":
-        return <Eye className={classNameStr} />;
       default:
         return <Shield className={classNameStr} />;
     }
@@ -134,9 +136,7 @@ export default function RoleSelect({
         />
       </button>
 
-      {error && (
-        <p className="mt-1 text-xs text-rose-500">{error}</p>
-      )}
+      {error && <p className="mt-1 text-xs text-rose-500">{error}</p>}
 
       {isOpen && (
         <div className="absolute left-0 top-full z-50 mt-1.5 w-full rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl shadow-slate-900/10 animate-in fade-in zoom-in-95 duration-150">

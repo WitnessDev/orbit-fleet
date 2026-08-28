@@ -36,17 +36,17 @@ export default function UserRow({
   // Role Badge Styling
   const getRoleBadge = (role: string) => {
     switch (role) {
+      case "owner":
+        return {
+          label: "Owner",
+          bg: "bg-emerald-50 text-emerald-800 border-emerald-200/90",
+          dot: "bg-emerald-600",
+        };
       case "admin":
         return {
           label: "Admin",
           bg: "bg-purple-50 text-purple-700 border-purple-200/80",
           dot: "bg-purple-500",
-        };
-      case "owner":
-        return {
-          label: "Owner",
-          bg: "bg-emerald-50 text-emerald-800 border-emerald-200/80",
-          dot: "bg-emerald-600",
         };
       case "fleet_manager":
         return {
@@ -54,17 +54,17 @@ export default function UserRow({
           bg: "bg-blue-50 text-blue-700 border-blue-200/80",
           dot: "bg-blue-500",
         };
+      case "dispatcher":
+        return {
+          label: "Dispatcher",
+          bg: "bg-teal-50 text-teal-700 border-teal-200/80",
+          dot: "bg-teal-500",
+        };
       case "driver":
         return {
           label: "Driver",
           bg: "bg-slate-100 text-slate-700 border-slate-200",
           dot: "bg-slate-500",
-        };
-      case "viewer":
-        return {
-          label: "Viewer",
-          bg: "bg-amber-50 text-amber-800 border-amber-200/80",
-          dot: "bg-amber-500",
         };
       default:
         return {
