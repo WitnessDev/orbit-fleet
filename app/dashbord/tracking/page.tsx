@@ -15,12 +15,14 @@ import {
   Sliders,
   Sparkles,
   Navigation,
+  Search,
 } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import DashboardLayout from "@/components/DashboardLayout";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
 import Speedometer from "@/components/telemetry/Speedometer";
 import HeadingCompass from "@/components/telemetry/HeadingCompass";
 import TelemetryCard from "@/components/telemetry/TelemetryCard";
@@ -36,6 +38,7 @@ import { addVehicle, getVehicles, type Vehicle } from "@/app/dashbord/database";
 const DEFAULT_CENTER = { lat: -3.3869, lng: 36.683 };
 
 export default function TrackingPage() {
+  const router = useRouter();
   const { fleet, loading: fleetLoading, stats } = useFleetTelemetry();
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
   const [showSimulator, setShowSimulator] = useState<boolean>(false);
@@ -43,6 +46,8 @@ export default function TrackingPage() {
   const [mapMode, setMapMode] = useState<"radar" | "satellite">("radar");
   const [zoom, setZoom] = useState<number>(13);
   const [seeding, setSeeding] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "moving" | "idle" | "offline">("all");
 
   // Raw vehicle list for simulator target selection
   const [allVehicles, setAllVehicles] = useState<Vehicle[]>([]);
@@ -65,8 +70,30 @@ export default function TrackingPage() {
 
   // Currently selected item from fleet list
   const activeFleetItem = useMemo(() => {
-    return fleet.find((v) => v.vehicleId === effectiveVehicleId) || (fleet.length > 0 ? fleet[0] : null);
+    return (
+      fleet.find((v) => v.vehicleId === effectiveVehicleId) ||
+      (fleet.length > 0 ? fleet[0] : null)
+    );
   }, [fleet, effectiveVehicleId]);
+
+  // Filtered fleet list for selector
+  const filteredFleet = useMemo(() => {
+    return fleet.filter((v) => {
+      const matchesSearch =
+        searchQuery === "" ||
+        v.registrationNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        v.make.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        v.model.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (v.driverName && v.driverName.toLowerCase().includes(searchQuery.toLowerCase()));
+
+      if (!matchesSearch) return false;
+
+      if (statusFilter === "moving") return v.speed > 3;
+      if (statusFilter === "idle") return v.status === "idle" || (v.status === "online" && v.speed <= 3);
+      if (statusFilter === "offline") return v.status === "offline";
+      return true;
+    });
+  }, [fleet, searchQuery, statusFilter]);
 
   // Handle auto-seed realistic test fleet if database is empty
   const handleSeedSampleFleet = async () => {
@@ -157,77 +184,64 @@ export default function TrackingPage() {
   };
 
   return (
-    <DashboardLayout title="Live Fleet Tracking & Telemetry">
-      {/* Header Banner */}
+    <DashboardLayout title="Live Fleet Tracking">
+      {/* Top Header & Quick Actions */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-            <Radio className="h-6 w-6 animate-pulse" />
-          </div>
-          <div>
+        <div>
+          <div className="flex items-center gap-2">
             <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl text-text-primary">
-              Live Fleet Telemetry
+              Live Fleet Tracking
             </h1>
-            <p className="mt-0.5 text-sm text-text-secondary">
-              Real-time Firestore stream, GPS coordinate interpolation, velocity sensors, and dev simulator.
-            </p>
+            <Badge status="online">Live Stream</Badge>
           </div>
+          <p className="mt-1 text-sm text-text-secondary">
+            Real-time geospatial tracking, velocity telemetry, and developer GPS simulation.
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <div className="hidden sm:flex items-center gap-2 rounded-xl bg-white px-3 py-1.5 border border-border shadow-xs text-xs">
-            <span className="flex h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
-            <span className="font-semibold text-slate-700">Stream Connected</span>
-            <span className="font-mono text-slate-400">|</span>
-            <span className="font-mono text-emerald-600 font-bold">{stats.live} Live</span>
-          </div>
-
-          <button
-            type="button"
+          <Button
+            variant={showSimulator ? "primary" : "secondary"}
             onClick={() => setShowSimulator(!showSimulator)}
-            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition shadow-sm border ${
-              showSimulator
-                ? "bg-slate-900 text-emerald-400 border-slate-700"
-                : "bg-emerald-600 text-white border-emerald-500 hover:bg-emerald-500"
-            }`}
+            className="gap-2 text-xs"
           >
             <Sliders className="h-4 w-4" />
-            {showSimulator ? "Hide GPS Simulator" : "Open GPS Simulator"}
-          </button>
+            {showSimulator ? "Hide Simulator" : "Open GPS Simulator"}
+          </Button>
         </div>
       </div>
 
-      {/* Fleet KPI Telemetry Summary Ribbons */}
+      {/* Fleet KPI Quick Status Bar */}
       <div className="mb-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="rounded-xl border border-border bg-white p-3.5 shadow-xs">
+        <div className="rounded-2xl border border-border bg-white p-3.5 shadow-xs">
           <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Total Units</p>
           <p className="font-display text-xl font-bold text-text-primary mt-1">{stats.total}</p>
         </div>
-        <div className="rounded-xl border border-border bg-white p-3.5 shadow-xs">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Active Stream
+        <div className="rounded-2xl border border-border bg-white p-3.5 shadow-xs">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Stream
           </p>
-          <p className="font-display text-xl font-bold text-emerald-600 mt-1">{stats.live}</p>
+          <p className="font-display text-xl font-bold text-emerald-700 mt-1">{stats.live}</p>
         </div>
-        <div className="rounded-xl border border-border bg-white p-3.5 shadow-xs">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600 flex items-center gap-1">
+        <div className="rounded-2xl border border-border bg-white p-3.5 shadow-xs">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-blue-700 flex items-center gap-1">
             <Truck className="h-3 w-3 text-blue-500" /> In Transit
           </p>
-          <p className="font-display text-xl font-bold text-blue-600 mt-1">{stats.moving}</p>
+          <p className="font-display text-xl font-bold text-blue-700 mt-1">{stats.moving}</p>
         </div>
-        <div className="rounded-xl border border-border bg-white p-3.5 shadow-xs">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-amber-600 flex items-center gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Parked / Idle
+        <div className="rounded-2xl border border-border bg-white p-3.5 shadow-xs">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700 flex items-center gap-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-500" /> Idle / Standby
           </p>
-          <p className="font-display text-xl font-bold text-amber-600 mt-1">{stats.idle}</p>
+          <p className="font-display text-xl font-bold text-amber-700 mt-1">{stats.idle}</p>
         </div>
-        <div className="rounded-xl border border-border bg-white p-3.5 shadow-xs">
-          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Offline / Stale</p>
-          <p className="font-display text-xl font-bold text-slate-600 mt-1">{stats.offline}</p>
+        <div className="rounded-2xl border border-border bg-white p-3.5 shadow-xs">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-600">Offline</p>
+          <p className="font-display text-xl font-bold text-slate-700 mt-1">{stats.offline}</p>
         </div>
-        <div className="rounded-xl border border-border bg-white p-3.5 shadow-xs">
+        <div className="rounded-2xl border border-border bg-white p-3.5 shadow-xs">
           <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted flex items-center gap-1">
-            <Gauge className="h-3 w-3 text-primary" /> Fleet Avg Speed
+            <Gauge className="h-3 w-3 text-primary" /> Avg Velocity
           </p>
           <p className="font-display text-xl font-bold text-text-primary mt-1">
             {stats.avgSpeed} <span className="text-xs font-normal text-text-muted">km/h</span>
@@ -236,10 +250,10 @@ export default function TrackingPage() {
       </div>
 
       {fleetLoading ? (
-        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-2xl bg-white border border-border p-8 text-text-muted">
+        <div className="flex min-h-[450px] flex-col items-center justify-center rounded-2xl bg-white border border-border p-8 text-text-muted">
           <RefreshCw className="h-8 w-8 animate-spin text-primary mb-3" />
           <p className="text-sm font-semibold text-text-primary">Subscribing to Firestore GPS Telemetry Stream...</p>
-          <p className="text-xs text-text-muted mt-1">Listening for real-time location and speed updates</p>
+          <p className="text-xs text-text-muted mt-1">Establishing real-time connection</p>
         </div>
       ) : fleet.length === 0 ? (
         <Card className="p-12 text-center max-w-2xl mx-auto">
@@ -247,38 +261,35 @@ export default function TrackingPage() {
             <MapIcon className="h-8 w-8" />
           </div>
           <h2 className="font-display text-xl font-bold text-text-primary">
-            No Fleet Telemetry Stream Active
+            No Fleet Vehicles Found
           </h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-text-secondary">
             Your Firestore database has no vehicles yet. You can create a vehicle manually or load realistic sample vehicles to test real-time simulator movement immediately.
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            <button
-              type="button"
-              onClick={handleSeedSampleFleet}
-              disabled={seeding}
-              className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-primary/20 hover:bg-primary-hover transition disabled:opacity-50"
-            >
+            <Button onClick={handleSeedSampleFleet} disabled={seeding} className="gap-2">
               {seeding ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              Load Test Fleet with GPS (Arusha)
-            </button>
-            <Link
-              href="/dashbord/vehicles"
-              className="inline-flex items-center gap-2 rounded-xl border border-border bg-white px-5 py-2.5 text-xs font-bold text-text-primary hover:bg-surface-hover transition"
+              Load Test Fleet (Arusha Corridor)
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => router.push("/dashbord/vehicles")}
+              className="gap-1.5"
             >
               <Plus className="h-4 w-4" /> Add Vehicle
-            </Link>
+            </Button>
           </div>
         </Card>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-          {/* Left Column: Interactive Map Stage */}
-          <div className="space-y-4">
-            <Card className="relative min-h-[580px] overflow-hidden rounded-2xl border border-border bg-slate-950 shadow-xl flex flex-col justify-between p-4 sm:p-6 text-white select-none">
-              {/* Map Top Ribbon Controls */}
-              <div className="relative z-30 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-950/85 p-3 backdrop-blur-md border border-slate-800 shadow-md">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400">
+        <div className="space-y-6">
+          {/* PRIMARY MAP CONTAINER (Spacious, prominent) */}
+          <div className="relative">
+            <Card className="relative h-[540px] sm:h-[620px] overflow-hidden rounded-2xl border border-border bg-slate-950 shadow-lg flex flex-col justify-between p-4 sm:p-6 text-white select-none">
+              {/* Floating Top Map Toolbar */}
+              <div className="relative z-30 flex flex-wrap items-center justify-between gap-2.5 rounded-xl bg-slate-950/85 p-2.5 sm:p-3 backdrop-blur-md border border-slate-800 shadow-md">
+                {/* Active Tracking Target info */}
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
                     <Radio className="h-4 w-4 animate-pulse" />
                   </div>
                   <div>
@@ -292,24 +303,25 @@ export default function TrackingPage() {
                         </span>
                       )}
                     </div>
-                    <p className="text-[10px] text-slate-400 truncate max-w-[200px]">
+                    <p className="text-[10px] text-slate-400 truncate max-w-[150px] sm:max-w-[220px]">
                       {activeFleetItem ? `${activeFleetItem.make} ${activeFleetItem.model}` : "Monitoring fleet"}
                     </p>
                   </div>
                 </div>
 
+                {/* Map Controls */}
                 <div className="flex items-center gap-2 text-xs">
                   {/* Coordinates Badge */}
-                  <span className="hidden sm:inline-flex rounded-md bg-slate-900 px-2.5 py-1 text-[11px] font-mono text-emerald-400 border border-slate-800">
+                  <span className="hidden md:inline-flex rounded-md bg-slate-900 px-2.5 py-1 text-[11px] font-mono text-emerald-400 border border-slate-800">
                     Lat: {activeFleetItem?.latitude.toFixed(4)}, Lng: {activeFleetItem?.longitude.toFixed(4)}
                   </span>
 
-                  {/* Map Type / Layer Switch */}
+                  {/* Map Layer Switch */}
                   <div className="flex items-center rounded-lg bg-slate-900 p-0.5 border border-slate-800">
                     <button
                       type="button"
                       onClick={() => setMapMode("radar")}
-                      className={`rounded px-2 py-1 text-[10px] font-bold uppercase transition ${
+                      className={`rounded px-2.5 py-1 text-[10px] font-bold uppercase transition ${
                         mapMode === "radar" ? "bg-emerald-600 text-white" : "text-slate-400 hover:text-white"
                       }`}
                     >
@@ -318,7 +330,7 @@ export default function TrackingPage() {
                     <button
                       type="button"
                       onClick={() => setMapMode("satellite")}
-                      className={`rounded px-2 py-1 text-[10px] font-bold uppercase transition ${
+                      className={`rounded px-2.5 py-1 text-[10px] font-bold uppercase transition ${
                         mapMode === "satellite" ? "bg-emerald-600 text-white" : "text-slate-400 hover:text-white"
                       }`}
                     >
@@ -331,7 +343,7 @@ export default function TrackingPage() {
                     <button
                       type="button"
                       onClick={() => setZoom((z) => Math.min(z + 1, 17))}
-                      className="flex h-7 w-7 items-center justify-center rounded bg-slate-800 text-xs font-bold hover:bg-slate-700 transition"
+                      className="flex h-7 w-7 items-center justify-center rounded bg-slate-800 text-xs font-bold hover:bg-slate-700 transition text-slate-200"
                       title="Zoom In"
                     >
                       +
@@ -342,7 +354,7 @@ export default function TrackingPage() {
                     <button
                       type="button"
                       onClick={() => setZoom((z) => Math.max(z - 1, 9))}
-                      className="flex h-7 w-7 items-center justify-center rounded bg-slate-800 text-xs font-bold hover:bg-slate-700 transition"
+                      className="flex h-7 w-7 items-center justify-center rounded bg-slate-800 text-xs font-bold hover:bg-slate-700 transition text-slate-200"
                       title="Zoom Out"
                     >
                       -
@@ -355,7 +367,7 @@ export default function TrackingPage() {
               <div className="absolute inset-0 overflow-hidden">
                 {mapMode === "radar" ? (
                   <>
-                    {/* Dark High-Tech Radar Grid */}
+                    {/* High-Tech Radar Grid */}
                     <div
                       className="absolute inset-0 opacity-25"
                       style={{
@@ -391,10 +403,10 @@ export default function TrackingPage() {
 
                 {/* Map Geographic Landmark Anchors */}
                 <div className="absolute top-16 left-6 pointer-events-none text-[11px] font-mono text-emerald-500/40 flex items-center gap-1">
-                  <Navigation className="h-3 w-3" /> ARUSHA TRANSIT CORRIDOR • GRID ZONE 36S
+                  <Navigation className="h-3 w-3" /> ARUSHA TRANSIT CORRIDOR • GRID 36S
                 </div>
-                <div className="absolute bottom-20 right-6 pointer-events-none text-[10px] font-mono text-slate-600">
-                  REF: WGS-84 / GEODESIC STREAM
+                <div className="absolute bottom-16 right-6 pointer-events-none text-[10px] font-mono text-slate-600">
+                  REF: WGS-84 / GEODESIC
                 </div>
 
                 {/* All Fleet Vehicle Markers with Live Interpolation */}
@@ -442,7 +454,7 @@ export default function TrackingPage() {
               </div>
 
               {/* Bottom Quick-Telemetry Summary Bar on Map */}
-              <div className="relative z-30 grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-xl bg-slate-950/85 p-3 backdrop-blur-md border border-slate-800 text-xs">
+              <div className="relative z-30 grid grid-cols-2 sm:grid-cols-4 gap-2 rounded-xl bg-slate-950/85 p-2.5 sm:p-3 backdrop-blur-md border border-slate-800 text-xs">
                 <div>
                   <p className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
                     <Gauge className="h-3 w-3 text-emerald-400" /> Velocity
@@ -463,16 +475,16 @@ export default function TrackingPage() {
 
                 <div>
                   <p className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
-                    <User className="h-3 w-3 text-emerald-400" /> Operator
+                    <User className="h-3 w-3 text-emerald-400" /> Driver
                   </p>
                   <p className="text-sm font-bold text-slate-200 truncate mt-0.5">
-                    {activeFleetItem?.driverName || "Assigned Driver"}
+                    {activeFleetItem?.driverName || "Unassigned"}
                   </p>
                 </div>
 
                 <div>
                   <p className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1">
-                    <Cpu className="h-3 w-3 text-emerald-400" /> GPS Unit
+                    <Cpu className="h-3 w-3 text-emerald-400" /> GPS Device
                   </p>
                   <p className="text-sm font-bold font-mono text-slate-200 truncate mt-0.5">
                     {activeFleetItem?.deviceSerial || activeFleetItem?.deviceId || "GPS-ACTIVE"}
@@ -481,21 +493,34 @@ export default function TrackingPage() {
               </div>
             </Card>
 
-            {/* Live Speedometer & Compass Telemetry Widgets */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Speedometer
-                speed={activeTelemetry ? activeTelemetry.speed : activeFleetItem?.speed ?? 0}
-                maxSpeed={120}
-              />
-              <HeadingCompass
-                heading={activeTelemetry ? activeTelemetry.heading : activeFleetItem?.heading ?? 90}
-              />
-            </div>
+            {/* Floating Simulator Drawer / Side Panel (opens on demand) */}
+            {showSimulator && (
+              <div className="mt-4 lg:mt-0">
+                <SimulatorPanel
+                  vehicles={allVehicles}
+                  selectedVehicleId={effectiveVehicleId || undefined}
+                  onVehicleChange={(vId) => setSelectedVehicleId(vId)}
+                  onClose={() => setShowSimulator(false)}
+                  isFloating={true}
+                />
+              </div>
+            )}
           </div>
 
-          {/* Right Column: Fleet List, Telemetry Card & Simulator Controller */}
-          <div className="space-y-4">
-            {/* Real-time Telemetry Summary Card */}
+          {/* TELEMETRY WIDGETS SECTION (3 Columns Desktop / 2 Tablet / 1 Mobile) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Speedometer Widget */}
+            <Speedometer
+              speed={activeTelemetry ? activeTelemetry.speed : activeFleetItem?.speed ?? 0}
+              maxSpeed={120}
+            />
+
+            {/* Heading Compass Widget */}
+            <HeadingCompass
+              heading={activeTelemetry ? activeTelemetry.heading : activeFleetItem?.heading ?? 90}
+            />
+
+            {/* Full Telemetry Card */}
             {activeFleetItem && (
               <TelemetryCard
                 registrationNumber={activeFleetItem.registrationNumber}
@@ -508,30 +533,81 @@ export default function TrackingPage() {
                 onOpenSimulator={() => setShowSimulator(true)}
               />
             )}
+          </div>
 
-            {/* Active Developer GPS Simulator Panel */}
-            {showSimulator && (
-              <SimulatorPanel
-                vehicles={allVehicles}
-                selectedVehicleId={effectiveVehicleId || undefined}
-                onVehicleChange={(vId) => setSelectedVehicleId(vId)}
-                onClose={() => setShowSimulator(false)}
-              />
-            )}
-
-            {/* Fleet Units Selection List */}
-            <Card className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="font-display text-sm font-bold text-text-primary">
+          {/* MONITORED FLEET ROSTER & FILTER LIST */}
+          <Card className="p-5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-4">
+              <div>
+                <h3 className="font-display text-base font-bold text-text-primary">
                   Monitored Units ({fleet.length})
                 </h3>
-                <span className="text-[11px] font-semibold text-text-muted">
-                  Click to track
-                </span>
+                <p className="text-xs text-text-muted mt-0.5">
+                  Select any vehicle to center map tracking and stream telemetry
+                </p>
               </div>
 
-              <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
-                {fleet.map((v) => {
+              {/* Search and Status Filters */}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-text-muted" />
+                  <input
+                    type="text"
+                    placeholder="Search fleet..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="rounded-xl border border-border bg-white pl-8 pr-3 py-1.5 text-xs text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+
+                <div className="flex items-center rounded-xl bg-surface p-0.5 border border-border text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter("all")}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                      statusFilter === "all" ? "bg-primary text-white" : "text-text-secondary hover:text-text-primary"
+                    }`}
+                  >
+                    All ({fleet.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter("moving")}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                      statusFilter === "moving" ? "bg-primary text-white" : "text-text-secondary hover:text-text-primary"
+                    }`}
+                  >
+                    Moving ({stats.moving})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter("idle")}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                      statusFilter === "idle" ? "bg-primary text-white" : "text-text-secondary hover:text-text-primary"
+                    }`}
+                  >
+                    Idle ({stats.idle})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatusFilter("offline")}
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition ${
+                      statusFilter === "offline" ? "bg-primary text-white" : "text-text-secondary hover:text-text-primary"
+                    }`}
+                  >
+                    Offline ({stats.offline})
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {filteredFleet.length === 0 ? (
+              <div className="py-8 text-center text-xs text-text-muted">
+                No vehicles matching filter &quot;{searchQuery}&quot;
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {filteredFleet.map((v) => {
                   const isSelected = activeFleetItem?.vehicleId === v.vehicleId;
 
                   return (
@@ -542,21 +618,21 @@ export default function TrackingPage() {
                         setSelectedVehicleId(v.vehicleId);
                         setShowInfoWindow(true);
                       }}
-                      className={`flex w-full items-center justify-between rounded-xl p-3 text-left transition border ${
+                      className={`flex items-center justify-between rounded-xl p-3.5 text-left transition border ${
                         isSelected
-                          ? "border-primary bg-primary/5 shadow-xs ring-1 ring-primary/20"
-                          : "border-border hover:bg-surface-hover"
+                          ? "border-primary bg-emerald-50/50 shadow-xs ring-1 ring-primary/30"
+                          : "border-border bg-white hover:bg-surface-hover hover:border-slate-300"
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <div
-                          className={`flex h-9 w-9 items-center justify-center rounded-xl transition ${
+                          className={`flex h-10 w-10 items-center justify-center rounded-xl transition ${
                             isSelected
                               ? "bg-primary text-white"
-                              : "bg-surface text-text-secondary"
+                              : "bg-surface text-text-secondary border border-border"
                           }`}
                         >
-                          <Car className="h-4 w-4" />
+                          <Car className="h-5 w-5" />
                         </div>
                         <div>
                           <div className="flex items-center gap-1.5">
@@ -568,7 +644,7 @@ export default function TrackingPage() {
                             )}
                           </div>
                           <p className="text-[11px] text-text-muted">
-                            {v.driverName ? v.driverName : "Unassigned"} • {Math.round(v.speed)} km/h
+                            {v.make} {v.model} • {v.driverName || "No driver"}
                           </p>
                         </div>
                       </div>
@@ -577,16 +653,16 @@ export default function TrackingPage() {
                         <Badge status={v.status === "online" ? "online" : v.status === "idle" ? "idle" : "offline"}>
                           {v.status}
                         </Badge>
-                        <span className="text-[10px] font-mono text-text-muted">
-                          {v.heading}°
+                        <span className="text-[11px] font-mono font-semibold text-text-primary">
+                          {Math.round(v.speed)} km/h
                         </span>
                       </div>
                     </button>
                   );
                 })}
               </div>
-            </Card>
-          </div>
+            )}
+          </Card>
         </div>
       )}
     </DashboardLayout>
