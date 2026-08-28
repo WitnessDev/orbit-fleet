@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ShieldAlert, ArrowLeft, Lock, RefreshCw } from "lucide-react";
 import Sidebar from "./Sidebar";
@@ -32,8 +32,41 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const [prevPathname, setPrevPathname] = useState(pathname);
   const router = useRouter();
   const { roleConfig, canAccess, loading } = useCurrentRole();
+
+  // 1. AUTO-CLOSE ON ANY ROUTE CHANGE DURING RENDER (No effect warning, immediate close)
+  if (prevPathname !== pathname) {
+    setPrevPathname(pathname);
+    if (mobileOpen) {
+      setMobileOpen(false);
+    }
+  }
+
+  // 2. BODY SCROLL LOCKING ON MOBILE DRAWER
+  useEffect(() => {
+    if (mobileOpen) {
+      const originalOverflow = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = originalOverflow;
+      };
+    } else {
+      document.body.style.overflow = "";
+    }
+  }, [mobileOpen]);
+
+  // 3. ESCAPE KEY LISTENER TO CLOSE MOBILE DRAWER
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && mobileOpen) {
+        setMobileOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [mobileOpen]);
 
   // Determine required permissions for current route
   const getRequiredPermissions = (): string[] => {
@@ -54,32 +87,42 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen bg-background text-text-primary">
-      {/* Mobile Drawer Overlay */}
+      {/* Mobile Backdrop Overlay */}
       {mobileOpen && (
         <div
+          role="button"
+          tabIndex={0}
+          aria-label="Close navigation overlay"
           onClick={() => setMobileOpen(false)}
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm lg:hidden"
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              setMobileOpen(false);
+            }
+          }}
+          className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-xs transition-opacity duration-300 lg:hidden cursor-pointer"
         />
       )}
 
-      {/* Sidebar (Desktop + Mobile) */}
+      {/* Sidebar Drawer Container (Desktop + Mobile) */}
       <div
-        className={`fixed inset-y-0 left-0 z-50 transition-transform duration-300 lg:translate-x-0 ${
-          mobileOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed inset-y-0 left-0 z-50 transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+          mobileOpen
+            ? "translate-x-0 pointer-events-auto"
+            : "-translate-x-full pointer-events-none lg:pointer-events-auto"
         }`}
       >
         <Sidebar onCloseMobile={() => setMobileOpen(false)} />
       </div>
 
       {/* Main Content Area */}
-      <div className="lg:pl-72 flex flex-col min-h-screen">
+      <div className="lg:pl-72 flex flex-col min-h-screen w-full">
         <Navbar
           title={title}
           onOpenMobileSidebar={() => setMobileOpen(true)}
         />
 
-        <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <div className="mx-auto max-w-[1600px]">
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden">
+          <div className="mx-auto max-w-[1600px] w-full">
             {loading ? (
               <div className="flex min-h-[400px] flex-col items-center justify-center gap-3">
                 <RefreshCw className="h-7 w-7 animate-spin text-primary" />

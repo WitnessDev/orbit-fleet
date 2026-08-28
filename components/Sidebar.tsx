@@ -31,12 +31,17 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
   const { user, profile, role, roleConfig, canAccess } = useCurrentRole();
 
   const handleLogout = async () => {
+    onCloseMobile?.();
     try {
       await logout();
       router.push("/login");
     } catch (error) {
       console.error("Logout failed:", error);
     }
+  };
+
+  const handleNavClick = () => {
+    onCloseMobile?.();
   };
 
   // Determine user display name and email from Firestore profile / Auth
@@ -119,12 +124,12 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
   };
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-border bg-white shadow-xl lg:shadow-xs">
+    <aside className="flex h-full w-72 flex-col border-r border-border bg-white shadow-2xl lg:shadow-xs">
       {/* Brand & Mobile Close */}
       <div className="flex h-20 items-center justify-between border-b border-border px-6">
         <Link
           href="/dashbord"
-          onClick={onCloseMobile}
+          onClick={handleNavClick}
           className="flex items-center gap-3"
         >
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-primary/20">
@@ -145,7 +150,7 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
           <button
             type="button"
             onClick={onCloseMobile}
-            className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 lg:hidden cursor-pointer"
+            className="flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 lg:hidden cursor-pointer"
             aria-label="Close sidebar"
           >
             <X className="h-5 w-5" />
@@ -168,7 +173,7 @@ export default function Sidebar({ onCloseMobile }: SidebarProps) {
               <Link
                 key={item.label}
                 href={item.href}
-                onClick={onCloseMobile}
+                onClick={handleNavClick}
                 className={`group flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition-all ${
                   item.active
                     ? "bg-primary text-white shadow-md shadow-primary/20"
