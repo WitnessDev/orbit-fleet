@@ -263,9 +263,7 @@ export default function DashboardPage() {
                 <p className="text-xs font-medium text-text-muted">
                   Fleet Operations
                 </p>
-                <h1 className="font-display text-lg font-bold text-text-primary">
-                  Command Center
-                </h1>
+               
               </div>
             </div>
 
@@ -289,9 +287,7 @@ export default function DashboardPage() {
                   <p className="text-xs font-bold text-text-primary">
                     Administrator
                   </p>
-                  <p className="text-[10px] text-text-muted">
-                    Operations Dispatch
-                  </p>
+                 
                 </div>
               </div>
             </div>
@@ -310,7 +306,7 @@ export default function DashboardPage() {
                 <div>
                   <div className="mb-3 flex items-center gap-2">
                     <Badge status="online">System Connected</Badge>
-                    <Badge status="info">Days 1 - 9 Completed</Badge>
+                    
                   </div>
 
                   <h2 className="font-display text-3xl font-bold tracking-tight sm:text-4xl text-text-primary">
@@ -336,13 +332,13 @@ export default function DashboardPage() {
             <StatCard
               label="Total Vehicles"
               value={totalVehicles.toString()}
-              detail={`${vehicles.length} active in Firestore`}
+              detail={`${vehicles.length} vehicles registered`}
               status="primary"
             />
             <StatCard
               label="Online"
               value={onlineCount.toString()}
-              detail="Transmitting coordinates"
+              detail="Active "
               status="success"
             />
             <StatCard
@@ -371,9 +367,7 @@ export default function DashboardPage() {
                       Live Fleet Overview
                     </h3>
                   </div>
-                  <p className="mt-1 text-xs text-text-muted">
-                    Real-time vehicle positioning & telemetry
-                  </p>
+                  
                 </div>
 
                 <Button
@@ -448,9 +442,7 @@ export default function DashboardPage() {
                     Operations & Modules
                   </h3>
                 </div>
-                <p className="mt-1 text-xs text-text-muted">
-                  Days 1 to 9 Fleet components
-                </p>
+               
               </div>
 
               <div className="divide-y divide-border">
@@ -472,9 +464,7 @@ export default function DashboardPage() {
                         {totalVehicles} units
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-text-muted">
-                      Day 7: Register, edit, assign drivers and GPS trackers
-                    </p>
+                    
                   </div>
                   <ChevronRight className="h-4 w-4 text-text-muted transition group-hover:translate-x-1 group-hover:text-primary" />
                 </button>
@@ -497,9 +487,7 @@ export default function DashboardPage() {
                         {drivers.length} drivers
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-text-muted">
-                      Day 8: License validation, assignments & status
-                    </p>
+                   
                   </div>
                   <ChevronRight className="h-4 w-4 text-text-muted transition group-hover:translate-x-1 group-hover:text-primary" />
                 </button>
@@ -522,9 +510,7 @@ export default function DashboardPage() {
                         {devices.length} trackers
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-text-muted">
-                      Day 9: IMEI tracking, connectivity & battery health
-                    </p>
+                   
                   </div>
                   <ChevronRight className="h-4 w-4 text-text-muted transition group-hover:translate-x-1 group-hover:text-primary" />
                 </button>
@@ -540,11 +526,9 @@ export default function DashboardPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-sm font-bold text-text-primary">
-                      RBAC & User Roles
+                    user management & RBAC
                     </p>
-                    <p className="mt-1 text-xs text-text-muted">
-                      Day 5: Super Admin, Manager, and Driver permissions
-                    </p>
+                    
                   </div>
                   <ChevronRight className="h-4 w-4 text-text-muted transition group-hover:translate-x-1 group-hover:text-primary" />
                 </button>
@@ -560,16 +544,9 @@ export default function DashboardPage() {
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                     <CheckCircle2 className="h-5 w-5" />
                   </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-text-primary">
-                      System Operational (Days 1–9 Active)
-                    </h3>
-                    <p className="mt-1 text-xs text-text-muted">
-                      All schemas, Auth, RBAC, Vehicle, Driver, and Device modules are connected to Firestore.
-                    </p>
-                  </div>
+                  
                 </div>
-                <Badge status="online">Operational</Badge>
+                
               </div>
             </Card>
           </section>
@@ -577,7 +554,7 @@ export default function DashboardPage() {
           {/* FOOTER */}
           <footer className="py-8 text-center">
             <p className="text-[10px] font-medium uppercase tracking-[0.15em] text-text-muted">
-              Orbit Fleet • Fleet Intelligence Platform
+              Orbit Fleet
             </p>
           </footer>
         </main>

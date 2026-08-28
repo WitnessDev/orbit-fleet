@@ -162,9 +162,7 @@ export default function UserManagementPage() {
                 {total} accounts
               </span>
             </div>
-            <p className="mt-1 text-xs sm:text-sm text-slate-500 max-w-2xl leading-relaxed">
-              Manage accounts, roles, access permissions, and vehicle assignments across the Orbit Fleet ecosystem.
-            </p>
+          
           </div>
 
           {/* Header Action Buttons */}
@@ -224,7 +222,7 @@ export default function UserManagementPage() {
           <StatCard
             label="Admins & Managers"
             value={String(stats.adminManagerCount)}
-            detail="Dispatch & system leads"
+            detail="Users with elevated privileges"
             status="primary"
           />
         </div>

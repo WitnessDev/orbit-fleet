@@ -414,10 +414,7 @@ export default function LoginPage() {
             }}
             className={isSignUp ? "pr-8 text-left" : "pl-10 text-left"}
           >
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-300 border border-emerald-300/30">
-              <Compass className="h-3 w-3 text-emerald-300" />
-              ORBIT FLEET MANAGEMENT
-            </span>
+            
 
             <h3 className="mt-3 mb-3 text-3xl font-black leading-tight text-white">
               {isSignUp ? (

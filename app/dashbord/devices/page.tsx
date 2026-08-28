@@ -251,7 +251,7 @@ export default function DevicesPage() {
           </div>
           <div>
             <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl text-text-primary">
-              GPS Tracking Devices (Day 9)
+              GPS Tracking Devices 
             </h1>
             <p className="mt-1 text-sm text-text-secondary">
               Register, configure IMEI serials, link telematics units, and monitor hardware connection status.
@@ -510,7 +510,7 @@ export default function DevicesPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-xs font-bold text-text-secondary">
-                    Device Identifier (Serial) *
+                    Device Identifier *
                   </label>
                   <input
                     type="text"
@@ -597,7 +597,7 @@ export default function DevicesPage() {
 
                 <div className="sm:col-span-2">
                   <label className="mb-1 block text-xs font-bold text-text-secondary">
-                    Assign to Fleet Vehicle (Day 9 Device Link)
+                    Assign to Fleet Vehicle
                   </label>
                   <select
                     value={form.vehicleId}

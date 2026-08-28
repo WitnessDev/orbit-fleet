@@ -108,7 +108,7 @@ export default function SettingsPage() {
               Role-Based Access Control (RBAC)
             </h1>
             <p className="mt-1 text-sm text-text-secondary">
-              Manage user permissions, roles (Super Admin, Manager, Driver), and organization settings.
+              Manage user permissions, roles  and organization settings.
             </p>
           </div>
         </div>
@@ -157,7 +157,7 @@ export default function SettingsPage() {
           <div className="flex flex-col gap-4 border-b border-border p-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="font-display text-base font-bold text-text-primary">
-                Users & Permissions (Day 5)
+                Users & Permissions 
               </h2>
               <p className="text-xs text-text-muted">
                 Assign and modify role permissions across your organization.
@@ -273,155 +273,7 @@ export default function SettingsPage() {
             </div>
           )}
         </Card>
-
-        {/* Role Explanations & Organization Card */}
-        <div className="space-y-6">
-          <Card className="p-5">
-            <div className="flex items-center gap-2.5 mb-4 border-b border-border pb-3">
-              <Shield className="h-5 w-5 text-primary" />
-              <h3 className="font-display text-sm font-bold text-text-primary">
-                Role Permissions Matrix
-              </h3>
-            </div>
-
-            <div className="space-y-3.5 text-xs">
-              <div className="rounded-xl border border-purple-200 bg-purple-50/50 p-3">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-bold text-purple-900">Super Admin</span>
-                  <Badge status="super_admin">Tier 1</Badge>
-                </div>
-                <p className="text-purple-800 leading-relaxed text-[11px]">
-                  Full access to workspace settings, user role assignment, fleet deletion, and database configuration.
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-teal-200 bg-teal-50/50 p-3">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-bold text-teal-900">Manager</span>
-                  <Badge status="manager">Tier 2</Badge>
-                </div>
-                <p className="text-teal-800 leading-relaxed text-[11px]">
-                  Manage fleet vehicles, assign drivers, connect GPS devices, and monitor live tracking.
-                </p>
-              </div>
-
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-bold text-slate-900">Driver</span>
-                  <Badge status="driver">Tier 3</Badge>
-                </div>
-                <p className="text-slate-600 leading-relaxed text-[11px]">
-                  View assigned vehicle, trip history, route assignments, and submit vehicle status updates.
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <Card className="p-5">
-            <div className="flex items-center gap-2.5 mb-3">
-              <Building2 className="h-5 w-5 text-primary" />
-              <h3 className="font-display text-sm font-bold text-text-primary">
-                Workspace Info
-              </h3>
-            </div>
-            <div className="space-y-2 text-xs text-text-secondary">
-              <div className="flex justify-between py-1 border-b border-border/60">
-                <span className="text-text-muted">Organization:</span>
-                <span className="font-semibold text-text-primary">Orbit Fleet Headquarters</span>
-              </div>
-              <div className="flex justify-between py-1 border-b border-border/60">
-                <span className="text-text-muted">Firestore DB:</span>
-                <span className="font-semibold text-emerald-700">orbit-fleet-dev</span>
-              </div>
-              <div className="flex justify-between py-1">
-                <span className="text-text-muted">Active Platform:</span>
-                <span className="font-semibold text-text-primary">Next.js + Firebase</span>
-              </div>
-            </div>
-          </Card>
-        </div>
       </div>
-
-      {/* Role Change Modal */}
-      {selectedUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl bg-surface p-6 shadow-2xl border border-border">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <UserCheck className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="font-display text-lg font-bold text-text-primary">
-                  Change Role
-                </h3>
-                <p className="text-xs text-text-muted">
-                  Update role for {selectedUser.name || selectedUser.email}
-                </p>
-              </div>
-            </div>
-
-            <div className="my-4 space-y-2">
-              <label className="block text-xs font-bold text-text-secondary">
-                Select New Role
-              </label>
-              <div className="space-y-2">
-                {[
-                  {
-                    value: "super_admin",
-                    label: "Super Admin",
-                    desc: "Full workspace & user management permissions",
-                  },
-                  {
-                    value: "manager",
-                    label: "Manager",
-                    desc: "Fleet, drivers, and device operational control",
-                  },
-                  {
-                    value: "driver",
-                    label: "Driver",
-                    desc: "Assigned vehicle and trip status access",
-                  },
-                ].map((item) => (
-                  <label
-                    key={item.value}
-                    className={`flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition ${
-                      newRole === item.value
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:bg-surface-hover"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="role"
-                      value={item.value}
-                      checked={newRole === item.value}
-                      onChange={() => setNewRole(item.value as UserRole)}
-                      className="mt-0.5 accent-primary"
-                    />
-                    <div>
-                      <p className="text-xs font-bold text-text-primary">{item.label}</p>
-                      <p className="text-[11px] text-text-muted">{item.desc}</p>
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end gap-2 border-t border-border pt-4">
-              <Button
-                variant="secondary"
-                onClick={() => setSelectedUser(null)}
-                disabled={updating}
-              >
-                Cancel
-              </Button>
-              <Button onClick={handleRoleChange} disabled={updating}>
-                {updating ? "Saving..." : "Update Role"}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </DashboardLayout>
   );
 }

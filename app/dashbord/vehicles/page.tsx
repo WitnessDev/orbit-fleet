@@ -249,9 +249,7 @@ export default function VehiclesPage() {
             <Truck className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl text-text-primary">
-              Fleet Vehicles (Day 7)
-            </h1>
+           
             <p className="mt-1 text-sm text-text-secondary">
               Register, edit, assign drivers, and monitor fleet vehicle status in real-time.
             </p>
@@ -506,9 +504,7 @@ export default function VehiclesPage() {
                   <h2 className="font-display text-lg font-bold text-text-primary">
                     {editingVehicle ? "Edit Vehicle" : "Add New Vehicle"}
                   </h2>
-                  <p className="text-xs text-text-muted">
-                    Save vehicle parameters, assigned driver, and GPS tracker directly to Firestore.
-                  </p>
+                  
                 </div>
               </div>
               <button
@@ -614,7 +610,7 @@ export default function VehiclesPage() {
 
                 <div>
                   <label className="mb-1 block text-xs font-bold text-text-secondary">
-                    Assign Driver (Day 8 Relational link)
+                    Assign Driver
                   </label>
                   <select
                     value={form.driverId}
@@ -632,7 +628,7 @@ export default function VehiclesPage() {
 
                 <div>
                   <label className="mb-1 block text-xs font-bold text-text-secondary">
-                    Assign GPS Device (Day 9 Device link)
+                    Assign GPS Device 
                   </label>
                   <select
                     value={form.deviceId}

@@ -256,11 +256,9 @@ export default function DriversPage() {
           </div>
           <div>
             <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl text-text-primary">
-              Fleet Drivers (Day 8)
+              Fleet Drivers 
             </h1>
-            <p className="mt-1 text-sm text-text-secondary">
-              Manage driver credentials, license numbers, duty status, and vehicle assignments.
-            </p>
+
           </div>
         </div>
 
@@ -596,7 +594,7 @@ export default function DriversPage() {
 
                 <div className="sm:col-span-2">
                   <label className="mb-1 block text-xs font-bold text-text-secondary">
-                    Assign Fleet Vehicle (Day 8 Assignment)
+                    Assign Fleet Vehicle 
                   </label>
                   <select
                     value={form.vehicleId}
